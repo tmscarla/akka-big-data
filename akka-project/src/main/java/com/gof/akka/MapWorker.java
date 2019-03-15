@@ -12,21 +12,11 @@ import java.util.List;
 import java.util.Map;
 
 public class MapWorker extends AbstractActor {
-    private final List<ActorRef> downstreamWorkers = new ArrayList<>();
-
-    private final int size;
-    private final int slide;
+    private final ActorRef downstream;
     private final MapFunction fun;
 
-    private final Map<String, List<String>> windows = new HashMap<>();
-
-    public MapWorker(final List<ActorRef> downstreamWorkers,
-                     final int size,
-                     final int slide,
-                     final MapFunction fun) {
-        this.downstreamWorkers.addAll(downstreamWorkers);
-        this.size = size;
-        this.slide = slide;
+    public MapWorker(final ActorRef downstream, final MapFunction fun) {
+        this.downstream = downstream;
         this.fun = fun;
     }
 
@@ -38,9 +28,11 @@ public class MapWorker extends AbstractActor {
         // Perform Map
         final Message result = fun.process(key, value);
 
-        // Send result to downstream workers
-        final int receiver = Math.abs(result.getKey().hashCode()) % downstreamWorkers.size();
-        downstreamWorkers.get(receiver).tell(result, self());
+        // Send result to downstream worker
+        downstream.tell(result, self());
+
+        // final int receiver = Math.abs(result.getKey().hashCode()) % downstream.size();
+        // downstreamWorkers.get(receiver).tell(result, self());
 
     }
 

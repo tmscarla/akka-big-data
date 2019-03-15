@@ -11,6 +11,7 @@ import java.util.ArrayList;
 
 public class Master extends AbstractActor {
     private ArrayList<ActorRef> children = null;
+    //private final ActorRef other = getContext().actorOf(MapWorker.props().withDeploy(new Deploy(new RemoteScope(addr)))));
 
 
     // OneForOneStrategy: the strategy applies only to the crashed child
