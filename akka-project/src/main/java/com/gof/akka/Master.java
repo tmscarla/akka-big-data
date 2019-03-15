@@ -9,7 +9,7 @@ import akka.japi.pf.DeciderBuilder;
 
 import java.util.ArrayList;
 
-public class Master {
+public class Master extends AbstractActor {
     private ArrayList<ActorRef> children = null;
 
 
@@ -25,7 +25,14 @@ public class Master {
     // Possible strategies: resume, restart, stop, escalate.
     // Try them out!
 
+    @Override
+    public Receive createReceive() {
+        return receiveBuilder().build();
+    }
+
     public static Props props() {
         return Props.create(Master.class);
     }
+
+
 }

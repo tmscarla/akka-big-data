@@ -9,16 +9,18 @@ import akka.actor.Props;
 
 import com.gof.akka.messages.Message;
 
-public class Sink<Vin, Kin> extends AbstractActor {
+public class Sink extends AbstractActor {
     private String filePath;
     private Boolean verbose = true;
     private Boolean firstWrite = false;
+
+    public Sink() {}
 
     public Sink(String filePath) {
         this.filePath = filePath;
     }
 
-    private final void writeMessage(Message<Kin, Vin> message) {
+    private final void writeMessage(Message message) {
         try (PrintWriter writer = new PrintWriter(new File(filePath))) {
 
             StringBuilder sb = new StringBuilder();
@@ -33,9 +35,9 @@ public class Sink<Vin, Kin> extends AbstractActor {
             }
 
             // Write message on csv
-            sb.append(String.valueOf(message.getKey()));
+            sb.append(message.getKey());
             sb.append(',');
-            sb.append(String.valueOf(message.getVal()));
+            sb.append(message.getVal());
             sb.append('\n');
 
             writer.write(sb.toString());
@@ -45,7 +47,7 @@ public class Sink<Vin, Kin> extends AbstractActor {
         }
     }
 
-    private final void onMessage(Message<Kin, Vin> message) {
+    private final void onMessage(Message message) {
         System.out.println("Sink received: " + message + " --");
         writeMessage(message);
     }
@@ -57,7 +59,7 @@ public class Sink<Vin, Kin> extends AbstractActor {
                 .build();
     }
 
-    static final <Kin, Vin, Kout, Vout> Props props() {
+    static final Props props() {
         return Props.create(Sink.class);
     }
 }
