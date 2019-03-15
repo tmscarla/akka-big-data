@@ -3,9 +3,7 @@ package com.gof.akka.messages;
 import java.io.Serializable;
 import java.util.List;
 
-import akka.stream.javadsl.Source;
 
-//FIXME implement batch
 public class BatchMessage implements Serializable {
 
     private static final long serialVersionUID = 435813336929600776L;
