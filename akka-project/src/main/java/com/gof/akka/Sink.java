@@ -49,7 +49,7 @@ public class Sink extends AbstractActor {
 
     private final void onMessage(Message message) {
         System.out.println("Sink received: " + message + " --");
-        writeMessage(message);
+        // writeMessage(message);
     }
 
     @Override

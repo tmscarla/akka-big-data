@@ -20,6 +20,8 @@ import com.gof.akka.Sink;
 import com.gof.akka.Source;
 import com.gof.akka.Master;
 
+import com.gof.akka.messages.Message;
+import com.gof.akka.messages.create.CreateMapMsg;
 import com.gof.akka.operators.AggregateFunction;
 
 public class App {
@@ -29,16 +31,23 @@ public class App {
         final ActorSystem sys = ActorSystem.create("System");
         System.out.println( "System created!" );
 
-        // The ActorRef remains valid throughout the lifecycle of the actor even if the actor stops and restarts
+        // Sink
+        List<ActorRef> sink = createSink(sys);
+        System.out.println( "Sink created!" );
 
         // Master (Supervisor)
-        final ActorRef supervisor = sys.actorOf(Master.props(), "master");
+        final ActorRef master = sys.actorOf(Master.props(), "master");
+        System.out.println( "Master created!" );
+
+        master.tell(new CreateMapMsg(true, new Address("akka.tcp", "sys", "host", 1234),
+                                        sink, 10,
+                                    ((String key, String value) -> new Message(key+"123", value))), ActorRef.noSender());
+
 
         // Source
         //final Source source = createSource(downstream, filePath);
 
-        // Sink
-        ActorRef sink = sys.actorOf(Sink.props(), "sink");
+
 
         /*
         To allow dynamically deployed systems, it is also possible to include deployment configuration

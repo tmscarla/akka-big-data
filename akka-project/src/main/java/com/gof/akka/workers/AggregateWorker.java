@@ -39,30 +39,66 @@ public class AggregateWorker extends Worker {
 
     @Override
     protected final void onMessage(Message message) {
+        // Get key and value of the message
         final String key = message.getKey();
         final String value = message.getVal();
 
-        List<String> keyWin = windows.get(key);
-        if (keyWin == null) {
-            keyWin = new ArrayList<>();
-            windows.put(key, keyWin);
+        // List of current values of the window
+        List<String> winValues = windows.get(key);
+        if (winValues == null) {
+            winValues = new ArrayList<>();
+            windows.put(key, winValues);
         }
-        keyWin.add(value);
+        winValues.add(value);
 
         // If the size is reached
-        if (keyWin.size() == windowSize) {
-            final Message result = fun.process(key, keyWin);
+        if (winValues.size() == windowSize) {
+            final Message result = fun.process(key, winValues);
             final int receiver = Math.abs(result.getKey().hashCode()) % downstream.size();
             downstream.get(receiver).tell(result, self());
-            // Slide
-            windows.put(key, keyWin.subList(windowSlide, keyWin.size()));
+
+            // Slide window
+            windows.put(key, winValues.subList(windowSlide, winValues.size()));
         }
     }
 
 
     @Override
     protected void onBatchMessage(BatchMessage batchMessage) {
+        for(Message message : batchMessage.getMessages()) {
+            // Get key and value of the message
+            final String key = message.getKey();
+            final String value = message.getVal();
 
+            // List of current values of the window
+            List<String> winValues = windows.get(key);
+            if (winValues == null) {
+                winValues = new ArrayList<>();
+                windows.put(key, winValues);
+            }
+            winValues.add(value);
+
+            // Slide window
+            windows.put(key, winValues.subList(windowSlide, winValues.size()));
+
+            // If the size is reached
+            if (winValues.size() == windowSize) {
+                final Message result = fun.process(key, winValues);
+                batchQueue.add(result);
+
+                if(batchQueue.size() == batchSize) {
+                    // Use the key of the first message to determine the right partition
+                    final int receiver = Math.abs(batchQueue.get(0).getKey().hashCode()) % downstream.size();
+                    downstream.get(receiver).tell(new BatchMessage(batchQueue), self());
+
+                    // Empty queue
+                    batchQueue.clear();
+                }
+                final int receiver = Math.abs(result.getKey().hashCode()) % downstream.size();
+                downstream.get(receiver).tell(result, self());
+
+            }
+        }
     }
 
     static final Props props(List<ActorRef> downstream, int size, int slide, final AggregateFunction fun) {
