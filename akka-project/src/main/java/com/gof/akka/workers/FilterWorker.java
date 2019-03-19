@@ -2,6 +2,7 @@ package com.gof.akka.workers;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import akka.actor.Props;
 import com.gof.akka.messages.BatchMessage;
 import com.gof.akka.messages.Message;
 import com.gof.akka.operators.FilterFunction;
@@ -10,7 +11,6 @@ import com.sun.org.apache.xpath.internal.operations.Bool;
 import java.util.List;
 
 public class FilterWorker extends Worker {
-    private final List<ActorRef> downstream;
     private final FilterFunction fun;
 
     public FilterWorker(final List<ActorRef> downstream, final int batchSize, final FilterFunction fun) {
@@ -59,5 +59,9 @@ public class FilterWorker extends Worker {
                 }
             }
         }
+    }
+
+    public static Props props(List<ActorRef> downstream, final int batchSize, final FilterFunction fun) {
+        return Props.create(FilterWorker.class, downstream, batchSize, fun);
     }
 }

@@ -1,19 +1,27 @@
 package com.gof.akka;
 
+import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import akka.actor.Props;
 import com.gof.akka.messages.Message;
+import com.gof.akka.messages.create.SourceMsg;
 
-public class Source implements Runnable {
-    private final List<ActorRef> downstream;
-    private final String sourceFilePath;
+public class Source  extends AbstractActor implements Runnable {
+    private List<ActorRef> downstream = new ArrayList<>();
+    private String sourceFilePath = "";
 
     private final Random rand = new Random();
 
     private volatile boolean stop = false;
+
+    public Source() {
+        super();
+    }
 
     public Source(final List<ActorRef> downstream, final String sourceFilePath) {
         this.downstream = downstream;
@@ -46,5 +54,21 @@ public class Source implements Runnable {
         } catch (final InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public Receive createReceive() {
+        return receiveBuilder() //
+                .match(SourceMsg.class, this::setDownstream) //
+                .build();
+    }
+
+    public void setDownstream(SourceMsg sourceMsg) {
+        this.downstream = sourceMsg.getDownstream();
+        downstream.get(0).tell(new Message("cascas", "zio"), self());
+    }
+
+    static final Props props() {
+        return Props.create(Source.class);
     }
 }

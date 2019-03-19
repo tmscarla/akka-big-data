@@ -21,7 +21,10 @@ import com.gof.akka.Source;
 import com.gof.akka.Master;
 
 import com.gof.akka.messages.Message;
+import com.gof.akka.messages.create.ChangeStageMsg;
 import com.gof.akka.messages.create.CreateMapMsg;
+import com.gof.akka.messages.create.SinkMsg;
+import com.gof.akka.messages.create.SourceMsg;
 import com.gof.akka.operators.AggregateFunction;
 
 public class App {
@@ -36,16 +39,25 @@ public class App {
         System.out.println( "Sink created!" );
 
         // Master (Supervisor)
-        final ActorRef master = sys.actorOf(Master.props(), "master");
+        final ActorRef master = sys.actorOf(Master.props(1), "master");
         System.out.println( "Master created!" );
 
-        master.tell(new CreateMapMsg(true, new Address("akka.tcp", "sys", "host", 1234),
-                                        sink, 10,
-                                    ((String key, String value) -> new Message(key+"123", value))), ActorRef.noSender());
+        master.tell(new SinkMsg(sink.get(0)), ActorRef.noSender());
 
+        master.tell(new ChangeStageMsg(), ActorRef.noSender());
+
+        master.tell(new CreateMapMsg(true, new Address("akka.tcp", "sys", "host", 1234),
+                10,
+                ((String key, String value) -> new Message(key+"123", value))), ActorRef.noSender());
+
+
+        master.tell(new ChangeStageMsg(), ActorRef.noSender());
 
         // Source
-        //final Source source = createSource(downstream, filePath);
+        final ActorRef source = sys.actorOf(Source.props(), "source");
+        master.tell(new SourceMsg(source), source);
+
+
 
 
 
@@ -59,6 +71,7 @@ public class App {
         */
         Address addr = new Address("akka.tcp", "sys", "host", 1234);
     }
+
 
     public static final void starterNode(ArrayList<String> collaboratorNodesURI) {
         // Generate list of suitable addresses for collaborator nodes
@@ -92,7 +105,6 @@ public class App {
     }
     */
 
-    private static final void p() {}
 
     private static final List<ActorRef> createSink(final ActorSystem sys) {
         return Collections.singletonList(sys.actorOf(Sink.props()));

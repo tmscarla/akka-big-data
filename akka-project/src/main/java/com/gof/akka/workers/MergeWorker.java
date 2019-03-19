@@ -4,6 +4,7 @@ import java.util.List;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import com.gof.akka.messages.BatchMessage;
 import com.gof.akka.messages.Message;
@@ -47,4 +48,7 @@ public class MergeWorker extends Worker {
         }
     }
 
+    public static Props props(List<ActorRef> downstream, final int batchSize) {
+        return Props.create(MapWorker.class, downstream, batchSize);
+    }
 }

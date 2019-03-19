@@ -1,22 +1,18 @@
 package com.gof.akka.messages.create;
 
-import java.io.Serializable;
-import java.util.List;
-import java.util.function.Function;
-
-import akka.actor.ActorRef;
 import akka.actor.Address;
-import com.gof.akka.operators.MapFunction;
+import com.gof.akka.operators.FilterFunction;
 
+import java.io.Serializable;
 
-public class CreateMapMsg implements Serializable {
+public class CreateFilterMsg implements Serializable {
     private boolean isLocal;
     private Address address;
 
     private int batchSize;
-    private MapFunction fun;
+    private FilterFunction fun;
 
-    public CreateMapMsg(boolean isLocal, Address address, int batchSize, final MapFunction fun) {
+    public CreateFilterMsg(boolean isLocal, Address address, int batchSize, final FilterFunction fun) {
         super();
         this.isLocal = isLocal;
         this.address = address;
@@ -34,7 +30,7 @@ public class CreateMapMsg implements Serializable {
         return batchSize;
     }
 
-    public MapFunction getFun() {
+    public FilterFunction getFun() {
         return fun;
     }
 
@@ -44,4 +40,3 @@ public class CreateMapMsg implements Serializable {
     }
 
 }
-
