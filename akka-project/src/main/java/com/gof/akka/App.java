@@ -4,29 +4,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import akka.actor.ActorSystem;
 import akka.actor.ActorRef;
 import akka.actor.Address;
-import akka.actor.Props;
-import akka.actor.Deploy;
-import akka.remote.RemoteScope;
 import akka.actor.AddressFromURIString;
-
-import com.gof.akka.Sink;
-import com.gof.akka.Source;
-import com.gof.akka.Master;
 
 import com.gof.akka.messages.Message;
 import com.gof.akka.messages.create.*;
-import com.gof.akka.operators.AbstractFunction;
-import com.gof.akka.operators.AggregateFunction;
-import com.gof.akka.operators.MapFunction;
-import com.sun.javaws.exceptions.InvalidArgumentException;
-import scala.None;
+import com.gof.akka.functions.MapFunction;
+import com.gof.akka.operators.*;
 
 public class App {
 
@@ -48,21 +35,13 @@ public class App {
 
         // Operators
 
-        MapFunction mapFun = (String key, String value) -> {return new Message("ale", "val");};
-
-        Operator op = new Operator("map", 10, mapFun);
-
-
         master.tell(new ChangeStageMsg(), ActorRef.noSender());
-
-
-
 
         master.tell(new CreateMapMsg(true,
                                     new Address("akka.tcp", "sys", "host", 1234),
-                                    op.batchSize,
-                                    (MapFunction)op.fun), ActorRef.noSender());
-
+                                    10,
+                                    (String k, String v) -> new Message(k+"123", v)),
+                                     ActorRef.noSender());
 
         master.tell(new ChangeStageMsg(), ActorRef.noSender());
 
@@ -75,28 +54,26 @@ public class App {
         master.tell(new SourceMsg(source), source);
 
 
-
-
-        /*
-        To allow dynamically deployed systems, it is also possible to include deployment configuration
-        in the Props which are used to create an actor: this information is the equivalent of a deployment
-        section from the configuration file, and if both are given, the external configuration takes precedence.
-
-        Address addr = new Address("akka.tcp", "sys", "host", 1234);
-        ActorRef ref = sys.actorOf(Props.create(Sink.class).withDeploy(new Deploy(new RemoteScope(addr))));
-        */
-        Address addr = new Address("akka.tcp", "sys", "host", 1234);
     }
 
 
-    public static final void starterNode(ArrayList<String> collaboratorNodesURI, List<Operator> operators) {
-        // Generate list of suitable addresses for collaborator nodes
-        ArrayList<Address> collabAddresses = new ArrayList<Address>();
-        for(String uri : collaboratorNodesURI) {
-            collabAddresses.add(AddressFromURIString.parse(uri));
-        }
+    public static final void starterNode(String starterNodeURI,
+                                         ArrayList<String> collaboratorNodesURI,
+                                         List<Operator> operators) {
+        /* INITIALIZATION */
 
-        // Check operators chain
+        //
+
+        // List of addresses of all nodes. First is starter.
+        ArrayList<Address> nodesAddr = new ArrayList<Address>();
+        nodesAddr.add(AddressFromURIString.parse(starterNodeURI));
+
+        for(String uri : collaboratorNodesURI) {
+            nodesAddr.add(AddressFromURIString.parse(uri));
+        }
+        int numMachines = nodesAddr.size();
+
+        // Check functions chain
         boolean needMerge = false;
         for(Operator op : operators) {
             // Found a split, waiting for a matching merge
@@ -116,15 +93,103 @@ public class App {
                 throw new RuntimeException();
             }
         }
-        // If not all split operators are matched by a merge operator
+        // If not all split functions are matched by a merge operator
         if(needMerge) {
             throw new RuntimeException();
         }
+
+        /* MAIN NODES */
+
+        // System, where actors actually live
+        final ActorSystem sys = ActorSystem.create("System");
+        System.out.println( "System created!" );
+
+        // Sink
+        List<ActorRef> sink = createSink(sys);
+        System.out.println( "Sink created!" );
+
+        // Master (Supervisor)
+        final ActorRef master = sys.actorOf(Master.props(numMachines), "master");
+        System.out.println( "Master created!" );
+
+        // Set sink as a downstream and change stage
+        master.tell(new SinkMsg(sink.get(0)), ActorRef.noSender());
+        master.tell(new ChangeStageMsg(), ActorRef.noSender());
+
+        /* OPERATORS */
+
+        // For each operator
+        for(Operator op : operators) {
+            boolean isLocal;
+            needMerge = false;
+
+            // Instantiate a worker on each machine
+            for(int i=0; i < numMachines; i++) {
+                // Check if is the starter node and deploy locally, otherwise remotely
+                if(i==0) {
+                    isLocal = true;
+                } else {
+                    isLocal = false;
+                }
+
+                // Map
+                if(op instanceof MapOperator) {
+                    master.tell(new CreateMapMsg(isLocal, nodesAddr.get(i), op.batchSize, ((MapOperator) op).fun),
+                                ActorRef.noSender());
+                }
+                // FlatMap
+                else if(op instanceof FlatMapOperator) {
+                    master.tell(new CreateFlatMapMsg(isLocal, nodesAddr.get(i), op.batchSize, ((FlatMapOperator) op).fun),
+                            ActorRef.noSender());
+                }
+                // Filter
+                else if(op instanceof FilterOperator) {
+                    master.tell(new CreateFilterMsg(isLocal, nodesAddr.get(i), op.batchSize, ((FilterOperator) op).fun),
+                            ActorRef.noSender());
+                }
+                // Aggregate
+                else if(op instanceof AggregateOperator) {
+                    master.tell(new CreateAggMsg(isLocal, nodesAddr.get(i), op.batchSize, ((AggregateOperator) op).fun,
+                                    ((AggregateOperator) op).windowSize, ((AggregateOperator) op).windowSlide),
+                            ActorRef.noSender());
+                }
+                // Split
+                else if(op instanceof SplitOperator) {
+                    master.tell(new CreateSplitMsg(isLocal, nodesAddr.get(i), op.batchSize),
+                            ActorRef.noSender());
+                    needMerge = true;
+                }
+                // Merge
+                else if(op instanceof MergeOperator) {
+                    master.tell(new CreateMergeMsg(isLocal, nodesAddr.get(i), op.batchSize),
+                            ActorRef.noSender());
+                    needMerge = false;
+                }
+
+                // Change stage only if operators are not in parallel, i.e. they are not between split and merge
+                if(!needMerge) {
+                    master.tell(new ChangeStageMsg(), ActorRef.noSender());
+                }
+
+            }
+            System.out.println("Operators created! Total number of stages:");
+
+            /* SOURCE */
+
+        }
+
+
 
 
     }
 
     public static final void collaboratorNode() {
+        /* INITIALIZATION */
+
+        // Define the system where actors actually live
+        final ActorSystem sys = ActorSystem.create("System");
+        System.out.println( "System created!" );
+
 
     }
 
@@ -134,19 +199,9 @@ public class App {
         new Thread(src).start();
         return src;
     }
-    /*
-    private static final List<ActorRef> createOperator(final int stage, final ActorSystem sys,
-                                                       final List<ActorRef> downstream, final int size,
-                                                       final int slide, final AggregateFunction fun) {
-
-        return IntStream.range(0, numPartitions). //
-                mapToObj(i -> sys.actorOf(Processor.props(downstream, size, slide, fun), "Proc_" + stage + "_" + i)). //
-                collect(Collectors.toList());
-    }
-    */
 
 
     private static final List<ActorRef> createSink(final ActorSystem sys) {
-        return Collections.singletonList(sys.actorOf(Sink.props()));
+        return Collections.singletonList(sys.actorOf(Sink.props(), "sink"));
     }
 }

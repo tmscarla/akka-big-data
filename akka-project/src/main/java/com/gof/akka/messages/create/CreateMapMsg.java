@@ -1,37 +1,17 @@
 package com.gof.akka.messages.create;
 
 import java.io.Serializable;
-import java.util.List;
-import java.util.function.Function;
 
-import akka.actor.ActorRef;
 import akka.actor.Address;
-import com.gof.akka.operators.MapFunction;
+import com.gof.akka.functions.MapFunction;
 
 
-public class CreateMapMsg implements Serializable {
-    private boolean isLocal;
-    private Address address;
-
-    private int batchSize;
+public class CreateMapMsg extends CreateMsg {
     private MapFunction fun;
 
-    public CreateMapMsg(boolean isLocal, Address address, int batchSize, final MapFunction fun) {
-        super();
-        this.isLocal = isLocal;
-        this.address = address;
-        this.batchSize = batchSize;
+    public CreateMapMsg(String name, boolean isLocal, Address address, int batchSize, final MapFunction fun) {
+        super(name, isLocal, address, batchSize);
         this.fun = fun;
-    }
-
-    public boolean isLocal() { return isLocal; }
-
-    public Address getAddress() {
-        return address;
-    }
-
-    public int getBatchSize() {
-        return batchSize;
     }
 
     public MapFunction getFun() {

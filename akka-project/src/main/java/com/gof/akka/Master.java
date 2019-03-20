@@ -7,10 +7,9 @@ import akka.actor.Address;
 import akka.remote.RemoteScope;
 import akka.actor.Deploy;
 
-import com.gof.akka.messages.Message;
 import com.gof.akka.messages.create.*;
-import com.gof.akka.operators.FilterFunction;
-import com.gof.akka.operators.MapFunction;
+import com.gof.akka.functions.FilterFunction;
+import com.gof.akka.functions.MapFunction;
 import com.gof.akka.workers.MapWorker;
 import com.gof.akka.workers.MergeWorker;
 import com.gof.akka.workers.SplitWorker;
@@ -23,7 +22,7 @@ public class Master extends AbstractActor {
     // Stage for split operator
     private List<List<ActorRef>> parallelStage = new ArrayList<>();
 
-    // Stage for all other operators
+    // Stage for all other functions
     private List<ActorRef> stage = new ArrayList<>();
     private List<ActorRef> oldStage = new ArrayList<>();
 
@@ -144,7 +143,7 @@ public class Master extends AbstractActor {
             splitWorker = getContext().actorOf(SplitWorker.props(new ArrayList<>(), batchSize));
         } else {
             splitWorker = getContext().actorOf(SplitWorker.props(new ArrayList<>(), batchSize)
-                    .withDeploy(new Deploy(new RemoteScope(address))));
+                    .withDeploy(new Deploy(new RemoteScope(address))), "");
         }
 
         // Update stage

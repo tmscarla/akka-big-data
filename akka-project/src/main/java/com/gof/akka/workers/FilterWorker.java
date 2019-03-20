@@ -1,12 +1,10 @@
 package com.gof.akka.workers;
 
-import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import com.gof.akka.messages.BatchMessage;
 import com.gof.akka.messages.Message;
-import com.gof.akka.operators.FilterFunction;
-import com.sun.org.apache.xpath.internal.operations.Bool;
+import com.gof.akka.functions.FilterFunction;
 
 import java.util.List;
 

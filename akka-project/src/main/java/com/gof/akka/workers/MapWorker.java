@@ -7,7 +7,7 @@ import akka.actor.Props;
 
 import com.gof.akka.messages.BatchMessage;
 import com.gof.akka.messages.Message;
-import com.gof.akka.operators.MapFunction;
+import com.gof.akka.functions.MapFunction;
 
 
 public class MapWorker extends Worker {
@@ -29,6 +29,7 @@ public class MapWorker extends Worker {
 
     @Override
     protected final void onMessage(Message message) {
+        System.out.println(color + "Map (" + stage + ") received " + message);
         // Perform Map on received message
         final Message result = fun.process(message.getKey(), message.getVal());
 

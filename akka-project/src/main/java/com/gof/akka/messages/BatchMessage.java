@@ -4,11 +4,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-
+// BatchMessage, a message which contains a list of different Message objects
 public class BatchMessage implements Serializable {
-
-    private static final long serialVersionUID = 435813336929600776L;
-
     private List<Message> messages = new ArrayList<>();
 
     public BatchMessage(List<Message> messages) {

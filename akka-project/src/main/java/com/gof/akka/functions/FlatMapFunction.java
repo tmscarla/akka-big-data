@@ -1,4 +1,4 @@
-package com.gof.akka.operators;
+package com.gof.akka.functions;
 
 import com.gof.akka.messages.Message;
 

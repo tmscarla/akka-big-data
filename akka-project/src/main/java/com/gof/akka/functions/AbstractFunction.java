@@ -1,4 +1,4 @@
-package com.gof.akka.operators;
+package com.gof.akka.functions;
 
 public interface AbstractFunction {
 }

@@ -7,7 +7,7 @@ import akka.actor.Props;
 
 import com.gof.akka.messages.BatchMessage;
 import com.gof.akka.messages.Message;
-import com.gof.akka.operators.FlatMapFunction;
+import com.gof.akka.functions.FlatMapFunction;
 
 
 public class FlatMapWorker extends Worker {

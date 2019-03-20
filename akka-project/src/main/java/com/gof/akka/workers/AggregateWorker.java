@@ -5,12 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 
 import com.gof.akka.messages.BatchMessage;
-import com.gof.akka.operators.AggregateFunction;
+import com.gof.akka.functions.AggregateFunction;
 import com.gof.akka.messages.Message;
 
 

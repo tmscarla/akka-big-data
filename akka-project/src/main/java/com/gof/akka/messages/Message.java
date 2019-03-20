@@ -1,9 +1,9 @@
 package com.gof.akka.messages;
 import java.io.Serializable;
 
-public class Message implements Serializable {
 
-    private static final long serialVersionUID = 435813336929600776L;
+// A message exchanged between functions. It consists in a (key, value) pair of strings.
+public class Message implements Serializable {
     private final String key;
     private final String val;
 
