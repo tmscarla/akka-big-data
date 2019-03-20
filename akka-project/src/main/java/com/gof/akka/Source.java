@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Random;
 
 import akka.actor.Props;
+import com.gof.akka.messages.BatchMessage;
 import com.gof.akka.messages.Message;
 import com.gof.akka.messages.create.SourceMsg;
 
@@ -65,7 +66,17 @@ public class Source  extends AbstractActor implements Runnable {
 
     public void setDownstream(SourceMsg sourceMsg) {
         this.downstream = sourceMsg.getDownstream();
-        downstream.get(0).tell(new Message("cascas", "zio"), self());
+        List <Message> refList = new ArrayList<>();
+        for(int i=0; i < 150; i++) {
+            refList.add(new Message(Integer.toString(i), "valore"));
+
+            if(i%5 == 0) {
+                BatchMessage bm = new BatchMessage(refList);
+                downstream.get(0).tell(bm, self());
+                refList.clear();
+            }
+        }
+
     }
 
     static final Props props() {

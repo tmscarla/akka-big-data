@@ -31,6 +31,7 @@ public class FilterWorker extends Worker {
     protected final void onMessage(Message message) {
         // Evaluate filter predicate
         final Boolean predicateResult = fun.predicate(message.getKey(), message.getVal());
+        System.out.println("Evaluated filter");
 
         // If predicate is true, send message to downstream worker
         if(predicateResult) {
@@ -42,7 +43,7 @@ public class FilterWorker extends Worker {
 
     @Override
     protected void onBatchMessage(BatchMessage batchMessage) {
-        // Perform Map on each received message of the batch and add result to batchQueue
+        // Evaluate predicate on each received message of the batch and add result to batchQueue
         for(Message message : batchMessage.getMessages()) {
             final Boolean predicateResult = fun.predicate(message.getKey(), message.getVal());
 

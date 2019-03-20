@@ -54,6 +54,7 @@ public class Master extends AbstractActor {
                 .match(SourceMsg.class, this::onReceiveSource) //
                 .match(SinkMsg.class, this::onReceiveSink) //
                 .match(CreateMapMsg.class, this::onCreateMapMsg) //
+                .match(CreateFilterMsg.class, this::onCreateFilterMsg) //
                 .match(CreateMergeMsg.class, this::onCreateMergeMsg) //
                 .match(CreateSplitMsg.class, this::onCreateSplitMsg) //
                 .build();
@@ -89,7 +90,6 @@ public class Master extends AbstractActor {
 
         // Update stage
         updateStage(mapWorker);
-        System.out.println("DONE MAP");
 
     }
 
@@ -109,7 +109,6 @@ public class Master extends AbstractActor {
 
         // Update stage
         updateStage(filterWorker);
-        System.out.println("DONE FILTER");
 
     }
 

@@ -21,11 +21,12 @@ import com.gof.akka.Source;
 import com.gof.akka.Master;
 
 import com.gof.akka.messages.Message;
-import com.gof.akka.messages.create.ChangeStageMsg;
-import com.gof.akka.messages.create.CreateMapMsg;
-import com.gof.akka.messages.create.SinkMsg;
-import com.gof.akka.messages.create.SourceMsg;
+import com.gof.akka.messages.create.*;
+import com.gof.akka.operators.AbstractFunction;
 import com.gof.akka.operators.AggregateFunction;
+import com.gof.akka.operators.MapFunction;
+import com.sun.javaws.exceptions.InvalidArgumentException;
+import scala.None;
 
 public class App {
 
@@ -42,21 +43,36 @@ public class App {
         final ActorRef master = sys.actorOf(Master.props(1), "master");
         System.out.println( "Master created!" );
 
+        // Set sink as a downstream
         master.tell(new SinkMsg(sink.get(0)), ActorRef.noSender());
+
+        // Operators
+
+        MapFunction mapFun = (String key, String value) -> {return new Message("ale", "val");};
+
+        Operator op = new Operator("map", 10, mapFun);
+
 
         master.tell(new ChangeStageMsg(), ActorRef.noSender());
 
-        master.tell(new CreateMapMsg(true, new Address("akka.tcp", "sys", "host", 1234),
-                10,
-                ((String key, String value) -> new Message(key+"123", value))), ActorRef.noSender());
 
 
+
+        master.tell(new CreateMapMsg(true,
+                                    new Address("akka.tcp", "sys", "host", 1234),
+                                    op.batchSize,
+                                    (MapFunction)op.fun), ActorRef.noSender());
+
+
+        master.tell(new ChangeStageMsg(), ActorRef.noSender());
+
+        master.tell(new CreateFilterMsg(true, new Address("akka.tcp", "sys", "host", 1234),
+                10, (String key, String value) -> true), ActorRef.noSender());
         master.tell(new ChangeStageMsg(), ActorRef.noSender());
 
         // Source
         final ActorRef source = sys.actorOf(Source.props(), "source");
         master.tell(new SourceMsg(source), source);
-
 
 
 
@@ -73,13 +89,37 @@ public class App {
     }
 
 
-    public static final void starterNode(ArrayList<String> collaboratorNodesURI) {
+    public static final void starterNode(ArrayList<String> collaboratorNodesURI, List<Operator> operators) {
         // Generate list of suitable addresses for collaborator nodes
         ArrayList<Address> collabAddresses = new ArrayList<Address>();
         for(String uri : collaboratorNodesURI) {
             collabAddresses.add(AddressFromURIString.parse(uri));
         }
 
+        // Check operators chain
+        boolean needMerge = false;
+        for(Operator op : operators) {
+            // Found a split, waiting for a matching merge
+            if(op.name.equals("split") && !needMerge) {
+                needMerge = true;
+            }
+            // Found two consecutive split
+            else if(op.name.equals("split") && !needMerge) {
+                throw new RuntimeException();
+            }
+            // Split matched by a merge!
+            else if(op.name.equals("merge") && needMerge) {
+                needMerge = false;
+            }
+            // Found merge first or two consecutive merge
+            else if(op.name.equals("merge") && !needMerge) {
+                throw new RuntimeException();
+            }
+        }
+        // If not all split operators are matched by a merge operator
+        if(needMerge) {
+            throw new RuntimeException();
+        }
 
 
     }

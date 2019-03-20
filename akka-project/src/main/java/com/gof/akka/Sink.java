@@ -7,7 +7,10 @@ import java.io.PrintWriter;
 import akka.actor.AbstractActor;
 import akka.actor.Props;
 
+import com.gof.akka.messages.BatchMessage;
 import com.gof.akka.messages.Message;
+
+import javax.swing.plaf.basic.BasicTabbedPaneUI;
 
 public class Sink extends AbstractActor {
     private String filePath;
@@ -18,6 +21,23 @@ public class Sink extends AbstractActor {
 
     public Sink(String filePath) {
         this.filePath = filePath;
+    }
+
+    @Override
+    public Receive createReceive() {
+        return receiveBuilder() //
+                .match(Message.class, this::onMessage) //
+                .match(BatchMessage.class, this::onBatchMessage) //
+                .build();
+    }
+
+    private final void onMessage(Message message) {
+        System.out.println("Sink received: " + message);
+        // writeMessage(message);
+    }
+
+    private final void onBatchMessage(BatchMessage batchMessage) {
+        System.out.println("Sink received batch: " + batchMessage);
     }
 
     private final void writeMessage(Message message) {
@@ -45,18 +65,6 @@ public class Sink extends AbstractActor {
         } catch (FileNotFoundException e) {
             System.out.println(e.getMessage());
         }
-    }
-
-    private final void onMessage(Message message) {
-        System.out.println("Sink received: " + message + " --");
-        // writeMessage(message);
-    }
-
-    @Override
-    public Receive createReceive() {
-        return receiveBuilder() //
-                .match(Message.class, this::onMessage) //
-                .build();
     }
 
     static final Props props() {
