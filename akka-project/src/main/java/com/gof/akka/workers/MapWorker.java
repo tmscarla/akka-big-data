@@ -29,7 +29,7 @@ public class MapWorker extends Worker {
 
     @Override
     protected final void onMessage(Message message) {
-        System.out.println(color + "Map (" + stage + ") received " + message);
+        System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
         // Perform Map on received message
         final Message result = fun.process(message.getKey(), message.getVal());
 
@@ -40,6 +40,7 @@ public class MapWorker extends Worker {
 
     @Override
     protected final void onBatchMessage(BatchMessage batchMessage) {
+        System.out.println(color + self().path().name() + "(" + stagePos + ") received batch: " + batchMessage);
         // Perform Map on each received message of the batch and add result to batchQueue
         for(Message message : batchMessage.getMessages()) {
             final Message result = fun.process(message.getKey(), message.getVal());

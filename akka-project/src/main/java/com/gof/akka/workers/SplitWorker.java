@@ -28,6 +28,7 @@ public class SplitWorker extends Worker {
 
     @Override
     public void onMessage(Message message) {
+        System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
         // For each group of workers of the same operator
         for(List<ActorRef> workers : downstream) {
             // Send result to downstream worker
@@ -38,6 +39,7 @@ public class SplitWorker extends Worker {
 
     @Override
     protected void onBatchMessage(BatchMessage batchMessage) {
+        System.out.println(color + self().path().name() + "(" + stagePos + ") received batch: " + batchMessage);
         for(Message message : batchMessage.getMessages()) {
             batchQueue.add(message);
 

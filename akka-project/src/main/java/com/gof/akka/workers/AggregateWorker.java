@@ -38,6 +38,7 @@ public class AggregateWorker extends Worker {
 
     @Override
     protected final void onMessage(Message message) {
+        System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
         // Get key and value of the message
         final String key = message.getKey();
         final String value = message.getVal();
@@ -64,6 +65,7 @@ public class AggregateWorker extends Worker {
 
     @Override
     protected void onBatchMessage(BatchMessage batchMessage) {
+        System.out.println(color + self().path().name() + "(" + stagePos + ") received batch: " + batchMessage);
         for(Message message : batchMessage.getMessages()) {
             // Get key and value of the message
             final String key = message.getKey();
@@ -100,7 +102,8 @@ public class AggregateWorker extends Worker {
         }
     }
 
-    static final Props props(List<ActorRef> downstream, int size, int slide, final AggregateFunction fun) {
-        return Props.create(AggregateWorker.class, downstream, size, slide, fun);
+    static public final Props props(List<ActorRef> downstream, int batchSize, final AggregateFunction fun,
+                                    int size, int slide) {
+        return Props.create(AggregateWorker.class, downstream, batchSize, fun, size, slide);
     }
 }

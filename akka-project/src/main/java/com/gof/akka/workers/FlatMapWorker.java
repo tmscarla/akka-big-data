@@ -29,6 +29,7 @@ public class FlatMapWorker extends Worker {
 
     @Override
     protected final void onMessage(Message message) {
+        System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
         // Perform Map on received message
         final List<Message> result = fun.process(message.getKey(), message.getVal());
 
@@ -41,6 +42,7 @@ public class FlatMapWorker extends Worker {
 
     @Override
     protected final void onBatchMessage(BatchMessage batchMessage) {
+        System.out.println(color + self().path().name() + "(" + stagePos + ") received batch: " + batchMessage);
         // Perform Map on each received message of the batch and add result to batchQueue
         for(Message message : batchMessage.getMessages()) {
             final List<Message> result = fun.process(message.getKey(), message.getVal());

@@ -7,13 +7,12 @@ import akka.actor.Address;
 import akka.remote.RemoteScope;
 import akka.actor.Deploy;
 
+import com.gof.akka.functions.AggregateFunction;
 import com.gof.akka.messages.create.*;
 import com.gof.akka.functions.FilterFunction;
 import com.gof.akka.functions.MapFunction;
-import com.gof.akka.workers.MapWorker;
-import com.gof.akka.workers.MergeWorker;
-import com.gof.akka.workers.SplitWorker;
-import com.gof.akka.workers.FilterWorker;
+import com.gof.akka.functions.FlatMapFunction;
+import com.gof.akka.workers.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +52,8 @@ public class Master extends AbstractActor {
                 .match(SourceMsg.class, this::onReceiveSource) //
                 .match(SinkMsg.class, this::onReceiveSink) //
                 .match(CreateMapMsg.class, this::onCreateMapMsg) //
+                .match(CreateFlatMapMsg.class, this::onCreateFlatMapMsg) //
+                .match(CreateAggMsg.class, this::onCreateAggMsg) //
                 .match(CreateFilterMsg.class, this::onCreateFilterMsg) //
                 .match(CreateMergeMsg.class, this::onCreateMergeMsg) //
                 .match(CreateSplitMsg.class, this::onCreateSplitMsg) //
@@ -74,6 +75,7 @@ public class Master extends AbstractActor {
     }
 
     private void onCreateMapMsg(CreateMapMsg mapMsg) {
+        String name = mapMsg.getName();
         Address address = mapMsg.getAddress();
         int batchSize = mapMsg.getBatchSize();
         MapFunction fun = mapMsg.getFun();
@@ -81,10 +83,10 @@ public class Master extends AbstractActor {
 
         // Local or remote deployment
         if(mapMsg.isLocal()) {
-            mapWorker = getContext().actorOf(MapWorker.props(oldStage, batchSize, fun));
+            mapWorker = getContext().actorOf(MapWorker.props(oldStage, batchSize, fun), name);
         } else {
             mapWorker = getContext().actorOf(MapWorker.props(oldStage, batchSize, fun)
-                                                .withDeploy(new Deploy(new RemoteScope(address))));
+                                                .withDeploy(new Deploy(new RemoteScope(address))), name);
         }
 
         // Update stage
@@ -92,7 +94,48 @@ public class Master extends AbstractActor {
 
     }
 
+    private void onCreateFlatMapMsg(CreateFlatMapMsg flatMapMsg) {
+        String name = flatMapMsg.getName();
+        Address address = flatMapMsg.getAddress();
+        int batchSize = flatMapMsg.getBatchSize();
+        FlatMapFunction fun = flatMapMsg.getFun();
+        ActorRef flatMapWorker;
+
+        // Local or remote deployment
+        if(flatMapMsg.isLocal()) {
+            flatMapWorker = getContext().actorOf(FlatMapWorker.props(oldStage, batchSize, fun), name);
+        } else {
+            flatMapWorker = getContext().actorOf(FlatMapWorker.props(oldStage, batchSize, fun)
+                    .withDeploy(new Deploy(new RemoteScope(address))), name);
+        }
+
+        // Update stage
+        updateStage(flatMapWorker);
+    }
+
+    private void onCreateAggMsg(CreateAggMsg aggMsg) {
+        String name = aggMsg.getName();
+        Address address = aggMsg.getAddress();
+        int batchSize = aggMsg.getBatchSize();
+        AggregateFunction fun = aggMsg.getFun();
+        int windowSize = aggMsg.getWindowSize();
+        int windowSlide = aggMsg.getWindowSlide();
+        ActorRef aggWorker;
+
+        // Local or remote deployment
+        if(aggMsg.isLocal()) {
+            aggWorker = getContext().actorOf(AggregateWorker.props(oldStage, batchSize, fun, windowSize, windowSlide), name);
+        } else {
+            aggWorker = getContext().actorOf(AggregateWorker.props(oldStage, batchSize, fun, windowSize, windowSlide)
+                    .withDeploy(new Deploy(new RemoteScope(address))), name);
+        }
+
+        // Update stage
+        updateStage(aggWorker);
+    }
+
     private void onCreateFilterMsg(CreateFilterMsg filterMsg) {
+        String name = filterMsg.getName();
         Address address = filterMsg.getAddress();
         int batchSize = filterMsg.getBatchSize();
         FilterFunction fun = filterMsg.getFun();
@@ -100,10 +143,10 @@ public class Master extends AbstractActor {
 
         // Local or remote deployment
         if(filterMsg.isLocal()) {
-            filterWorker = getContext().actorOf(FilterWorker.props(oldStage, batchSize, fun));
+            filterWorker = getContext().actorOf(FilterWorker.props(oldStage, batchSize, fun), name);
         } else {
             filterWorker = getContext().actorOf(FilterWorker.props(oldStage, batchSize, fun)
-                    .withDeploy(new Deploy(new RemoteScope(address))));
+                    .withDeploy(new Deploy(new RemoteScope(address))), name);
         }
 
         // Update stage
@@ -112,16 +155,17 @@ public class Master extends AbstractActor {
     }
 
     private void onCreateMergeMsg(CreateMergeMsg mergeMsg) {
+        String name = mergeMsg.getName();
         Address address = mergeMsg.getAddress();
         int batchSize = mergeMsg.getBatchSize();
         ActorRef mergeWorker;
 
         // Local or remote deployment
         if(mergeMsg.isLocal()) {
-            mergeWorker = getContext().actorOf(MergeWorker.props(oldStage, batchSize));
+            mergeWorker = getContext().actorOf(MergeWorker.props(oldStage, batchSize), name);
         } else {
             mergeWorker = getContext().actorOf(MergeWorker.props(oldStage, batchSize)
-                            .withDeploy(new Deploy(new RemoteScope(address))));
+                            .withDeploy(new Deploy(new RemoteScope(address))), name);
         }
 
         // Update stage
@@ -129,21 +173,21 @@ public class Master extends AbstractActor {
         if(stage.size() == numMachines) {
             isParallel = true;
         }
-        System.out.println("DONE MERGE");
 
     }
 
     public void onCreateSplitMsg(CreateSplitMsg splitMsg) {
+        String name = splitMsg.getName();
         Address address = splitMsg.getAddress();
         int batchSize = splitMsg.getBatchSize();
         ActorRef splitWorker;
 
         // Local or remote deployment
         if(splitMsg.isLocal()) {
-            splitWorker = getContext().actorOf(SplitWorker.props(new ArrayList<>(), batchSize));
+            splitWorker = getContext().actorOf(SplitWorker.props(new ArrayList<>(), batchSize), name);
         } else {
             splitWorker = getContext().actorOf(SplitWorker.props(new ArrayList<>(), batchSize)
-                    .withDeploy(new Deploy(new RemoteScope(address))), "");
+                    .withDeploy(new Deploy(new RemoteScope(address))), name);
         }
 
         // Update stage
@@ -151,7 +195,6 @@ public class Master extends AbstractActor {
         if(stage.size() == numMachines) {
             isParallel = true;
         }
-        System.out.println("DONE SPLIT");
 
     }
 

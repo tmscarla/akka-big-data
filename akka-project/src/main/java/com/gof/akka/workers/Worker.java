@@ -11,7 +11,7 @@ import java.util.List;
 
 public abstract class Worker extends AbstractActor {
     public String color = ConsoleColors.WHITE_BRIGHT;
-    public String stage;
+    public int stagePos;
 
     protected List<ActorRef> downstream = new ArrayList<>();
     protected int batchSize = 10;

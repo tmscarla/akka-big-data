@@ -27,6 +27,7 @@ public class FilterWorker extends Worker {
 
     @Override
     protected final void onMessage(Message message) {
+        System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
         // Evaluate filter predicate
         final Boolean predicateResult = fun.predicate(message.getKey(), message.getVal());
         System.out.println("Evaluated filter");
@@ -41,6 +42,7 @@ public class FilterWorker extends Worker {
 
     @Override
     protected void onBatchMessage(BatchMessage batchMessage) {
+        System.out.println(color + self().path().name() + "(" + stagePos + ") received batch: " + batchMessage);
         // Evaluate predicate on each received message of the batch and add result to batchQueue
         for(Message message : batchMessage.getMessages()) {
             final Boolean predicateResult = fun.predicate(message.getKey(), message.getVal());
