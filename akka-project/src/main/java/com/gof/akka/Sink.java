@@ -17,6 +17,8 @@ public class Sink extends AbstractActor {
     private Boolean verbose = true;
     private Boolean firstWrite = false;
 
+    int total = 0;
+
     public Sink() {}
 
     public Sink(String filePath) {
@@ -33,6 +35,8 @@ public class Sink extends AbstractActor {
 
     private final void onMessage(Message message) {
         System.out.println("Sink received: " + message);
+        total++;
+        System.out.println(total);
         // writeMessage(message);
     }
 

@@ -11,9 +11,8 @@ import java.util.List;
 public class FilterWorker extends Worker {
     private final FilterFunction fun;
 
-    public FilterWorker(final List<ActorRef> downstream, final int batchSize, final FilterFunction fun) {
-        this.downstream = downstream;
-        this.batchSize = batchSize;
+    public FilterWorker(String color, int stagePos, final List<ActorRef> downstream, final int batchSize, final FilterFunction fun) {
+        super(color, stagePos, downstream, batchSize);
         this.fun = fun;
     }
 
@@ -62,7 +61,8 @@ public class FilterWorker extends Worker {
         }
     }
 
-    public static Props props(List<ActorRef> downstream, final int batchSize, final FilterFunction fun) {
-        return Props.create(FilterWorker.class, downstream, batchSize, fun);
+    public static Props props(String color, int stagePos, List<ActorRef> downstream,
+                              final int batchSize, final FilterFunction fun) {
+        return Props.create(FilterWorker.class, color, stagePos, downstream, batchSize, fun);
     }
 }

@@ -9,9 +9,10 @@ public class CreateAggMsg extends CreateMsg {
     private int windowSize;
     private int windowSlide;
 
-    public CreateAggMsg(String name, boolean isLocal, Address address, int batchSize, final AggregateFunction fun,
+    public CreateAggMsg(String name, String color, int posStage, boolean isLocal,
+                        Address address, int batchSize, final AggregateFunction fun,
                         int windowSize, int windowSlide) {
-        super(name, isLocal, address, batchSize);
+        super(name, color, posStage, isLocal, address, batchSize);
         this.fun = fun;
         this.windowSize = windowSize;
         this.windowSlide = windowSlide;

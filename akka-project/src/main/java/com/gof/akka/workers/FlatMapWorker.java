@@ -13,9 +13,9 @@ import com.gof.akka.functions.FlatMapFunction;
 public class FlatMapWorker extends Worker {
     private final FlatMapFunction fun;
 
-    public FlatMapWorker(final List<ActorRef> downstream, final int batchSize, final FlatMapFunction fun) {
-        this.downstream = downstream;
-        this.batchSize = batchSize;
+    public FlatMapWorker(String color, int stagePos, final List<ActorRef> downstream,
+                         final int batchSize, final FlatMapFunction fun) {
+        super(color, stagePos, downstream, batchSize);
         this.fun = fun;
     }
 
@@ -62,8 +62,9 @@ public class FlatMapWorker extends Worker {
         }
     }
 
-    public static Props props(List<ActorRef> downstream, final int batchSize, final FlatMapFunction fun) {
-        return Props.create(FlatMapWorker.class, downstream, batchSize, fun);
+    public static Props props(String color, int stagePos, List<ActorRef> downstream,
+                              final int batchSize, final FlatMapFunction fun) {
+        return Props.create(FlatMapWorker.class, color, stagePos, downstream, batchSize, fun);
     }
 
 

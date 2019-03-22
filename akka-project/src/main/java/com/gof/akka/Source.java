@@ -68,13 +68,14 @@ public class Source  extends AbstractActor implements Runnable {
         this.downstream = sourceMsg.getDownstream();
         List <Message> refList = new ArrayList<>();
         for(int i=0; i < 150; i++) {
-            refList.add(new Message(Integer.toString(i), "valore"));
+            downstream.get(0).tell(new Message(Integer.toString(i), "valore"), self());
+            /*refList.add(new Message(Integer.toString(i), "valore"));
 
             if(i%5 == 0) {
                 BatchMessage bm = new BatchMessage(refList);
                 downstream.get(0).tell(bm, self());
                 refList.clear();
-            }
+            }*/
         }
 
     }

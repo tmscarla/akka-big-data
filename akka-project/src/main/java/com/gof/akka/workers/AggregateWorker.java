@@ -19,10 +19,9 @@ public class AggregateWorker extends Worker {
     private final AggregateFunction fun;
     private final Map<String, List<String>> windows = new HashMap<>();
 
-    public AggregateWorker(final List<ActorRef> downstream, final int batchSize,
+    public AggregateWorker(String color, int stagePos, final List<ActorRef> downstream, final int batchSize,
                            final int windowSize, final int windowSlide, final AggregateFunction fun) {
-        this.downstream = downstream;
-        this.batchSize = batchSize;
+        super(color, stagePos, downstream, batchSize);
         this.windowSize = windowSize;
         this.windowSlide = windowSlide;
         this.fun = fun;
@@ -102,8 +101,8 @@ public class AggregateWorker extends Worker {
         }
     }
 
-    static public final Props props(List<ActorRef> downstream, int batchSize, final AggregateFunction fun,
-                                    int size, int slide) {
-        return Props.create(AggregateWorker.class, downstream, batchSize, fun, size, slide);
+    static public final Props props(String color, int stagePos, List<ActorRef> downstream, int batchSize,
+                                    final AggregateFunction fun, int size, int slide) {
+        return Props.create(AggregateWorker.class, color, stagePos, downstream, batchSize, fun, size, slide);
     }
 }

@@ -13,9 +13,9 @@ import com.gof.akka.functions.MapFunction;
 public class MapWorker extends Worker {
     private final MapFunction fun;
 
-    public MapWorker(final List<ActorRef> downstream, final int batchSize, final MapFunction fun) {
-        this.downstream = downstream;
-        this.batchSize = batchSize;
+    public MapWorker(String color, int stagePos, final List<ActorRef> downstream,
+                     final int batchSize, final MapFunction fun) {
+        super(color, stagePos, downstream, batchSize);
         this.fun = fun;
     }
 
@@ -57,8 +57,9 @@ public class MapWorker extends Worker {
         }
     }
 
-    public static Props props(List<ActorRef> downstream, final int batchSize, final MapFunction fun) {
-        return Props.create(MapWorker.class, downstream, batchSize, fun);
+    public static Props props(String color, int stagePos, List<ActorRef> downstream,
+                              final int batchSize, final MapFunction fun) {
+        return Props.create(MapWorker.class, color, stagePos, downstream, batchSize, fun);
     }
 
 

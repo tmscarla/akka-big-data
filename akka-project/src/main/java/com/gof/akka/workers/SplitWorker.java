@@ -7,13 +7,16 @@ import akka.japi.pf.ReceiveBuilder;
 import com.gof.akka.messages.BatchMessage;
 import com.gof.akka.messages.Message;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SplitWorker extends Worker {
 
-    private List<List<ActorRef>> downstream;
+    private List<List<ActorRef>> downstream = new ArrayList<>();
 
-    public SplitWorker(List<List<ActorRef>> downstream, int batchSize) {
+    public SplitWorker(String color, int stagePos, List<List<ActorRef>> downstream, int batchSize) {
+        this.color = color;
+        this.stagePos = stagePos;
         this.downstream = downstream;
         this.batchSize = batchSize;
     }
@@ -58,8 +61,8 @@ public class SplitWorker extends Worker {
         }
     }
 
-    public static Props props(List<List<ActorRef>> downstream, final int batchSize) {
-        return Props.create(SplitWorker.class, downstream, batchSize);
+    public static Props props(String color, int stagePos, List<List<ActorRef>> downstream, final int batchSize) {
+        return Props.create(SplitWorker.class, color, stagePos, downstream, batchSize);
     }
 
 }

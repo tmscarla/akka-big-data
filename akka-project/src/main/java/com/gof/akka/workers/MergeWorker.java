@@ -11,9 +11,8 @@ import com.gof.akka.messages.Message;
 
 public class MergeWorker extends Worker {
 
-    public MergeWorker(List<ActorRef> downstream, int batchSize) {
-        this.downstream = downstream;
-        this.batchSize = batchSize;
+    public MergeWorker(String color, int stagePos, List<ActorRef> downstream, int batchSize) {
+        super(color, stagePos, downstream, batchSize);
     }
 
     @Override
@@ -50,7 +49,7 @@ public class MergeWorker extends Worker {
         }
     }
 
-    public static Props props(List<ActorRef> downstream, final int batchSize) {
-        return Props.create(MapWorker.class, downstream, batchSize);
+    public static Props props(String color, int stagePos, List<ActorRef> downstream, final int batchSize) {
+        return Props.create(MergeWorker.class, color, stagePos, downstream, batchSize);
     }
 }

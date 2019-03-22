@@ -2,6 +2,7 @@ package com.gof.akka;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -14,6 +15,8 @@ import com.gof.akka.messages.Message;
 import com.gof.akka.messages.create.*;
 import com.gof.akka.functions.MapFunction;
 import com.gof.akka.operators.*;
+import com.gof.akka.utils.ConsoleColors;
+import scala.collection.immutable.Stream;
 
 public class App {
 
@@ -37,16 +40,33 @@ public class App {
 
         master.tell(new ChangeStageMsg(), ActorRef.noSender());
 
-        master.tell(new CreateMapMsg(true,
-                                    new Address("akka.tcp", "sys", "host", 1234),
-                                    10,
-                                    (String k, String v) -> new Message(k+"123", v)),
-                                     ActorRef.noSender());
+        master.tell(new CreateMergeMsg("Merge", ConsoleColors.WHITE, 3, true,new Address("akka.tcp", "sys", "host", 1234),
+                10), ActorRef.noSender());
 
         master.tell(new ChangeStageMsg(), ActorRef.noSender());
 
-        master.tell(new CreateFilterMsg(true, new Address("akka.tcp", "sys", "host", 1234),
+        master.tell(new CreateFilterMsg("Filter", ConsoleColors.YELLOW_BRIGHT, 2, true, new Address("akka.tcp", "sys", "host", 1234),
                 10, (String key, String value) -> true), ActorRef.noSender());
+
+        master.tell(new CreateMapMsg("Map", ConsoleColors.YELLOW_BRIGHT, 2,true,
+                        new Address("akka.tcp", "sys", "host", 1234),
+                        10,
+                        (String k, String v) -> new Message(k+"pippo", v)),
+                ActorRef.noSender());
+
+        master.tell(new ChangeStageMsg(), ActorRef.noSender());
+
+        master.tell(new CreateSplitMsg("Split", ConsoleColors.RED_BRIGHT,1, true,new Address("akka.tcp", "sys", "host", 1234),
+                10), ActorRef.noSender());
+
+        master.tell(new ChangeStageMsg(), ActorRef.noSender());
+
+        master.tell(new CreateMapMsg("MapIn", ConsoleColors.BLUE_BRIGHT, 0,true,
+                        new Address("akka.tcp", "sys", "host", 1234),
+                        10,
+                        (String k, String v) -> new Message(k+"123", v)),
+                ActorRef.noSender());
+
         master.tell(new ChangeStageMsg(), ActorRef.noSender());
 
         // Source
@@ -62,7 +82,10 @@ public class App {
                                          List<Operator> operators) {
         /* INITIALIZATION */
 
-        //
+        // Colors
+        List<String> colors = Arrays.asList(ConsoleColors.WHITE_BRIGHT, ConsoleColors.RED_BRIGHT,
+                                            ConsoleColors.BLUE_BRIGHT, ConsoleColors.YELLOW_BRIGHT,
+                                            ConsoleColors.GREEN_BRIGHT, ConsoleColors.PURPLE_BRIGHT);
 
         // List of addresses of all nodes. First is starter.
         ArrayList<Address> nodesAddr = new ArrayList<Address>();
@@ -119,7 +142,9 @@ public class App {
         /* OPERATORS */
 
         // For each operator
+        int posStage = 0;
         for(Operator op : operators) {
+            posStage++;
             boolean isLocal;
             needMerge = false;
 
@@ -132,36 +157,39 @@ public class App {
                     isLocal = false;
                 }
 
+                // Set color
+                String color = colors.get(i % colors.size());
+
                 // Map
                 if(op instanceof MapOperator) {
-                    master.tell(new CreateMapMsg(isLocal, nodesAddr.get(i), op.batchSize, ((MapOperator) op).fun),
-                                ActorRef.noSender());
+                    master.tell(new CreateMapMsg(op.name, color, posStage, isLocal, nodesAddr.get(i), op.batchSize,
+                                    ((MapOperator) op).fun), ActorRef.noSender());
                 }
                 // FlatMap
                 else if(op instanceof FlatMapOperator) {
-                    master.tell(new CreateFlatMapMsg(isLocal, nodesAddr.get(i), op.batchSize, ((FlatMapOperator) op).fun),
-                            ActorRef.noSender());
+                    master.tell(new CreateFlatMapMsg(op.name, color, posStage, isLocal, nodesAddr.get(i), op.batchSize,
+                                    ((FlatMapOperator) op).fun), ActorRef.noSender());
                 }
                 // Filter
                 else if(op instanceof FilterOperator) {
-                    master.tell(new CreateFilterMsg(isLocal, nodesAddr.get(i), op.batchSize, ((FilterOperator) op).fun),
-                            ActorRef.noSender());
+                    master.tell(new CreateFilterMsg(op.name, color, posStage, isLocal, nodesAddr.get(i), op.batchSize,
+                                    ((FilterOperator) op).fun), ActorRef.noSender());
                 }
                 // Aggregate
                 else if(op instanceof AggregateOperator) {
-                    master.tell(new CreateAggMsg(isLocal, nodesAddr.get(i), op.batchSize, ((AggregateOperator) op).fun,
-                                    ((AggregateOperator) op).windowSize, ((AggregateOperator) op).windowSlide),
-                            ActorRef.noSender());
+                    master.tell(new CreateAggMsg(op.name, color, posStage, isLocal, nodesAddr.get(i), op.batchSize,
+                                    ((AggregateOperator) op).fun, ((AggregateOperator) op).windowSize,
+                                    ((AggregateOperator) op).windowSlide), ActorRef.noSender());
                 }
                 // Split
                 else if(op instanceof SplitOperator) {
-                    master.tell(new CreateSplitMsg(isLocal, nodesAddr.get(i), op.batchSize),
-                            ActorRef.noSender());
+                    master.tell(new CreateSplitMsg(op.name, color, posStage, isLocal, nodesAddr.get(i), op.batchSize),
+                                     ActorRef.noSender());
                     needMerge = true;
                 }
                 // Merge
                 else if(op instanceof MergeOperator) {
-                    master.tell(new CreateMergeMsg(isLocal, nodesAddr.get(i), op.batchSize),
+                    master.tell(new CreateMergeMsg(op.name, color, posStage, isLocal, nodesAddr.get(i), op.batchSize),
                             ActorRef.noSender());
                     needMerge = false;
                 }
@@ -175,6 +203,10 @@ public class App {
             System.out.println("Operators created! Total number of stages:");
 
             /* SOURCE */
+
+            // Source
+            final ActorRef source = sys.actorOf(Source.props(), "source");
+            master.tell(new SourceMsg(source), source);
 
         }
 

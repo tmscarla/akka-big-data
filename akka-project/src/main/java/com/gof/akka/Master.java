@@ -13,6 +13,7 @@ import com.gof.akka.functions.FilterFunction;
 import com.gof.akka.functions.MapFunction;
 import com.gof.akka.functions.FlatMapFunction;
 import com.gof.akka.workers.*;
+import com.sun.org.apache.bcel.internal.generic.ACONST_NULL;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +44,10 @@ public class Master extends AbstractActor {
 
     public Master(int numMachines) {
         this.numMachines = numMachines;
+
+        for (int i = 0; i < numMachines; i++) {
+            parallelStage.add(new ArrayList<>());
+        }
     }
 
     @Override
@@ -75,18 +80,22 @@ public class Master extends AbstractActor {
     }
 
     private void onCreateMapMsg(CreateMapMsg mapMsg) {
-        String name = mapMsg.getName();
-        Address address = mapMsg.getAddress();
-        int batchSize = mapMsg.getBatchSize();
-        MapFunction fun = mapMsg.getFun();
         ActorRef mapWorker;
 
         // Local or remote deployment
-        if(mapMsg.isLocal()) {
-            mapWorker = getContext().actorOf(MapWorker.props(oldStage, batchSize, fun), name);
+        if (mapMsg.isLocal()) {
+            mapWorker = getContext().actorOf(MapWorker.props(mapMsg.getColor(),
+                    mapMsg.getPosStage(),
+                    stageDeepCopy(oldStage),
+                    mapMsg.getBatchSize(),
+                    mapMsg.getFun()), mapMsg.getName());
         } else {
-            mapWorker = getContext().actorOf(MapWorker.props(oldStage, batchSize, fun)
-                                                .withDeploy(new Deploy(new RemoteScope(address))), name);
+            mapWorker = getContext().actorOf(MapWorker.props(mapMsg.getColor(),
+                    mapMsg.getPosStage(),
+                    stageDeepCopy(oldStage),
+                    mapMsg.getBatchSize(),
+                    mapMsg.getFun())
+                    .withDeploy(new Deploy(new RemoteScope(mapMsg.getAddress()))), mapMsg.getName());
         }
 
         // Update stage
@@ -95,18 +104,22 @@ public class Master extends AbstractActor {
     }
 
     private void onCreateFlatMapMsg(CreateFlatMapMsg flatMapMsg) {
-        String name = flatMapMsg.getName();
-        Address address = flatMapMsg.getAddress();
-        int batchSize = flatMapMsg.getBatchSize();
-        FlatMapFunction fun = flatMapMsg.getFun();
         ActorRef flatMapWorker;
 
         // Local or remote deployment
-        if(flatMapMsg.isLocal()) {
-            flatMapWorker = getContext().actorOf(FlatMapWorker.props(oldStage, batchSize, fun), name);
+        if (flatMapMsg.isLocal()) {
+            flatMapWorker = getContext().actorOf(FlatMapWorker.props(flatMapMsg.getColor(),
+                    flatMapMsg.getPosStage(),
+                    stageDeepCopy(oldStage),
+                    flatMapMsg.getBatchSize(),
+                    flatMapMsg.getFun()), flatMapMsg.getName());
         } else {
-            flatMapWorker = getContext().actorOf(FlatMapWorker.props(oldStage, batchSize, fun)
-                    .withDeploy(new Deploy(new RemoteScope(address))), name);
+            flatMapWorker = getContext().actorOf(FlatMapWorker.props(flatMapMsg.getColor(),
+                    flatMapMsg.getPosStage(),
+                    stageDeepCopy(oldStage),
+                    flatMapMsg.getBatchSize(),
+                    flatMapMsg.getFun())
+                    .withDeploy(new Deploy(new RemoteScope(flatMapMsg.getAddress()))), flatMapMsg.getName());
         }
 
         // Update stage
@@ -114,20 +127,27 @@ public class Master extends AbstractActor {
     }
 
     private void onCreateAggMsg(CreateAggMsg aggMsg) {
-        String name = aggMsg.getName();
-        Address address = aggMsg.getAddress();
-        int batchSize = aggMsg.getBatchSize();
-        AggregateFunction fun = aggMsg.getFun();
-        int windowSize = aggMsg.getWindowSize();
-        int windowSlide = aggMsg.getWindowSlide();
         ActorRef aggWorker;
 
         // Local or remote deployment
-        if(aggMsg.isLocal()) {
-            aggWorker = getContext().actorOf(AggregateWorker.props(oldStage, batchSize, fun, windowSize, windowSlide), name);
+        if (aggMsg.isLocal()) {
+            aggWorker = getContext().actorOf(AggregateWorker.props(aggMsg.getColor(),
+                    aggMsg.getPosStage(),
+                    stageDeepCopy(oldStage),
+                    aggMsg.getBatchSize(),
+                    aggMsg.getFun(),
+                    aggMsg.getWindowSize(),
+                    aggMsg.getWindowSlide()), aggMsg.getName());
         } else {
-            aggWorker = getContext().actorOf(AggregateWorker.props(oldStage, batchSize, fun, windowSize, windowSlide)
-                    .withDeploy(new Deploy(new RemoteScope(address))), name);
+            aggWorker = getContext().actorOf(AggregateWorker.props(aggMsg.getColor(),
+                    aggMsg.getPosStage(),
+                    stageDeepCopy(oldStage),
+                    aggMsg.getBatchSize(),
+                    aggMsg.getFun(),
+                    aggMsg.getWindowSize(),
+                    aggMsg.getWindowSlide())
+                    .withDeploy(new Deploy(new RemoteScope(aggMsg.getAddress()))), aggMsg.getName());
+
         }
 
         // Update stage
@@ -135,18 +155,22 @@ public class Master extends AbstractActor {
     }
 
     private void onCreateFilterMsg(CreateFilterMsg filterMsg) {
-        String name = filterMsg.getName();
-        Address address = filterMsg.getAddress();
-        int batchSize = filterMsg.getBatchSize();
-        FilterFunction fun = filterMsg.getFun();
         ActorRef filterWorker;
 
         // Local or remote deployment
-        if(filterMsg.isLocal()) {
-            filterWorker = getContext().actorOf(FilterWorker.props(oldStage, batchSize, fun), name);
+        if (filterMsg.isLocal()) {
+            filterWorker = getContext().actorOf(FilterWorker.props(filterMsg.getColor(),
+                    filterMsg.getPosStage(),
+                    stageDeepCopy(oldStage),
+                    filterMsg.getBatchSize(),
+                    filterMsg.getFun()), filterMsg.getName());
         } else {
-            filterWorker = getContext().actorOf(FilterWorker.props(oldStage, batchSize, fun)
-                    .withDeploy(new Deploy(new RemoteScope(address))), name);
+            filterWorker = getContext().actorOf(FilterWorker.props(filterMsg.getColor(),
+                    filterMsg.getPosStage(),
+                    stageDeepCopy(oldStage),
+                    filterMsg.getBatchSize(),
+                    filterMsg.getFun())
+                    .withDeploy(new Deploy(new RemoteScope(filterMsg.getAddress()))), filterMsg.getName());
         }
 
         // Update stage
@@ -155,59 +179,90 @@ public class Master extends AbstractActor {
     }
 
     private void onCreateMergeMsg(CreateMergeMsg mergeMsg) {
-        String name = mergeMsg.getName();
-        Address address = mergeMsg.getAddress();
-        int batchSize = mergeMsg.getBatchSize();
         ActorRef mergeWorker;
 
         // Local or remote deployment
-        if(mergeMsg.isLocal()) {
-            mergeWorker = getContext().actorOf(MergeWorker.props(oldStage, batchSize), name);
+        if (mergeMsg.isLocal()) {
+            mergeWorker = getContext().actorOf(MergeWorker.props(mergeMsg.getColor(),
+                    mergeMsg.getPosStage(),
+                    stageDeepCopy(oldStage),
+                    mergeMsg.getBatchSize()), mergeMsg.getName());
         } else {
-            mergeWorker = getContext().actorOf(MergeWorker.props(oldStage, batchSize)
-                            .withDeploy(new Deploy(new RemoteScope(address))), name);
+            mergeWorker = getContext().actorOf(MergeWorker.props(mergeMsg.getColor(),
+                    mergeMsg.getPosStage(),
+                    stageDeepCopy(oldStage),
+                    mergeMsg.getBatchSize())
+                    .withDeploy(new Deploy(new RemoteScope(mergeMsg.getAddress()))), mergeMsg.getName());
+
         }
 
         // Update stage
         stage.add(mergeWorker);
-        if(stage.size() == numMachines) {
+        if (stage.size() == numMachines) {
             isParallel = true;
         }
 
     }
 
     public void onCreateSplitMsg(CreateSplitMsg splitMsg) {
-        String name = splitMsg.getName();
-        Address address = splitMsg.getAddress();
-        int batchSize = splitMsg.getBatchSize();
         ActorRef splitWorker;
 
+        // Deep copy for parallel stage
+        List<List<ActorRef>> pStage = new ArrayList<>();
+        for (List<ActorRef> list : parallelStage) {
+            pStage.add(new ArrayList<>());
+            for (ActorRef actor : list) {
+                pStage.get(pStage.size() - 1).add(actor);
+            }
+        }
+
         // Local or remote deployment
-        if(splitMsg.isLocal()) {
-            splitWorker = getContext().actorOf(SplitWorker.props(new ArrayList<>(), batchSize), name);
+        if (splitMsg.isLocal()) {
+            splitWorker = getContext().actorOf(SplitWorker.props(splitMsg.getColor(),
+                    splitMsg.getPosStage(),
+                    pStage,
+                    splitMsg.getBatchSize()), splitMsg.getName());
         } else {
-            splitWorker = getContext().actorOf(SplitWorker.props(new ArrayList<>(), batchSize)
-                    .withDeploy(new Deploy(new RemoteScope(address))), name);
+            splitWorker = getContext().actorOf(SplitWorker.props(splitMsg.getColor(),
+                    splitMsg.getPosStage(),
+                    pStage,
+                    splitMsg.getBatchSize())
+                    .withDeploy(new Deploy(new RemoteScope(splitMsg.getAddress()))), splitMsg.getName());
         }
 
         // Update stage
         stage.add(splitWorker);
-        if(stage.size() == numMachines) {
-            isParallel = true;
+        if (stage.size() == numMachines) {
+            isParallel = false;
+            for (int i = 0; i < numMachines; i++) {
+                parallelStage.get(i).clear();
+            }
+
         }
 
     }
 
     public void updateStage(ActorRef actorRef) {
-        if(isParallel) {
+        if (isParallel) {
             parallelStage.get(currentMachine).add(actorRef);
-            if(parallelStage.size() == numMachines) {
+            if (parallelStage.get(currentMachine).size() == numMachines) {
                 currentMachine++;
+                if (currentMachine == numMachines) {
+                    currentMachine = 0;
+                }
             }
 
         } else {
             stage.add(actorRef);
         }
+    }
+
+    private List<ActorRef> stageDeepCopy(List<ActorRef> stage) {
+        List<ActorRef> newStage = new ArrayList<>();
+        for (ActorRef actor : stage) {
+            newStage.add(actor);
+        }
+        return newStage;
     }
 
     public static Props props(int numMachines) {

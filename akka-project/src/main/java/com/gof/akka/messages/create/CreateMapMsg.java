@@ -9,8 +9,9 @@ import com.gof.akka.functions.MapFunction;
 public class CreateMapMsg extends CreateMsg {
     private MapFunction fun;
 
-    public CreateMapMsg(String name, boolean isLocal, Address address, int batchSize, final MapFunction fun) {
-        super(name, isLocal, address, batchSize);
+    public CreateMapMsg(String name, String color, int posStage, boolean isLocal,
+                        Address address, int batchSize, final MapFunction fun) {
+        super(name, color, posStage, isLocal, address, batchSize);
         this.fun = fun;
     }
 

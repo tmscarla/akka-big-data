@@ -8,8 +8,9 @@ import java.io.Serializable;
 public class CreateFilterMsg extends CreateMsg {
     private FilterFunction fun;
 
-    public CreateFilterMsg(String name, boolean isLocal, Address address, int batchSize, final FilterFunction fun) {
-        super(name, isLocal, address, batchSize);
+    public CreateFilterMsg(String name, String color, int posStage, boolean isLocal,
+                           Address address, int batchSize, final FilterFunction fun) {
+        super(name, color, posStage, isLocal, address, batchSize);
         this.fun = fun;
     }
 
