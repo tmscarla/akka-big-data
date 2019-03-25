@@ -21,6 +21,10 @@ import scala.collection.immutable.Stream;
 public class App {
 
     public static void main( String[] args ) throws InterruptedException, IOException {
+        firstTry();
+    }
+
+    public static final void firstTry() {
         // Define the system where actors actually live
         final ActorSystem sys = ActorSystem.create("System");
         System.out.println( "System created!" );
@@ -72,157 +76,6 @@ public class App {
         // Source
         final ActorRef source = sys.actorOf(Source.props(), "source");
         master.tell(new SourceMsg(source), source);
-
-
-    }
-
-
-    public static final void starterNode(String starterNodeURI,
-                                         ArrayList<String> collaboratorNodesURI,
-                                         List<Operator> operators) {
-        /* INITIALIZATION */
-
-        // Colors
-        List<String> colors = Arrays.asList(ConsoleColors.WHITE_BRIGHT, ConsoleColors.RED_BRIGHT,
-                                            ConsoleColors.BLUE_BRIGHT, ConsoleColors.YELLOW_BRIGHT,
-                                            ConsoleColors.GREEN_BRIGHT, ConsoleColors.PURPLE_BRIGHT);
-
-        // List of addresses of all nodes. First is starter.
-        ArrayList<Address> nodesAddr = new ArrayList<Address>();
-        nodesAddr.add(AddressFromURIString.parse(starterNodeURI));
-
-        for(String uri : collaboratorNodesURI) {
-            nodesAddr.add(AddressFromURIString.parse(uri));
-        }
-        int numMachines = nodesAddr.size();
-
-        // Check functions chain
-        boolean needMerge = false;
-        for(Operator op : operators) {
-            // Found a split, waiting for a matching merge
-            if(op.name.equals("split") && !needMerge) {
-                needMerge = true;
-            }
-            // Found two consecutive split
-            else if(op.name.equals("split") && !needMerge) {
-                throw new RuntimeException();
-            }
-            // Split matched by a merge!
-            else if(op.name.equals("merge") && needMerge) {
-                needMerge = false;
-            }
-            // Found merge first or two consecutive merge
-            else if(op.name.equals("merge") && !needMerge) {
-                throw new RuntimeException();
-            }
-        }
-        // If not all split functions are matched by a merge operator
-        if(needMerge) {
-            throw new RuntimeException();
-        }
-
-        /* MAIN NODES */
-
-        // System, where actors actually live
-        final ActorSystem sys = ActorSystem.create("System");
-        System.out.println( "System created!" );
-
-        // Sink
-        List<ActorRef> sink = createSink(sys);
-        System.out.println( "Sink created!" );
-
-        // Master (Supervisor)
-        final ActorRef master = sys.actorOf(Master.props(numMachines), "master");
-        System.out.println( "Master created!" );
-
-        // Set sink as a downstream and change stage
-        master.tell(new SinkMsg(sink.get(0)), ActorRef.noSender());
-        master.tell(new ChangeStageMsg(), ActorRef.noSender());
-
-        /* OPERATORS */
-
-        // For each operator
-        int posStage = 0;
-        for(Operator op : operators) {
-            posStage++;
-            boolean isLocal;
-            needMerge = false;
-
-            // Instantiate a worker on each machine
-            for(int i=0; i < numMachines; i++) {
-                // Check if is the starter node and deploy locally, otherwise remotely
-                if(i==0) {
-                    isLocal = true;
-                } else {
-                    isLocal = false;
-                }
-
-                // Set color
-                String color = colors.get(i % colors.size());
-
-                // Map
-                if(op instanceof MapOperator) {
-                    master.tell(new CreateMapMsg(op.name, color, posStage, isLocal, nodesAddr.get(i), op.batchSize,
-                                    ((MapOperator) op).fun), ActorRef.noSender());
-                }
-                // FlatMap
-                else if(op instanceof FlatMapOperator) {
-                    master.tell(new CreateFlatMapMsg(op.name, color, posStage, isLocal, nodesAddr.get(i), op.batchSize,
-                                    ((FlatMapOperator) op).fun), ActorRef.noSender());
-                }
-                // Filter
-                else if(op instanceof FilterOperator) {
-                    master.tell(new CreateFilterMsg(op.name, color, posStage, isLocal, nodesAddr.get(i), op.batchSize,
-                                    ((FilterOperator) op).fun), ActorRef.noSender());
-                }
-                // Aggregate
-                else if(op instanceof AggregateOperator) {
-                    master.tell(new CreateAggMsg(op.name, color, posStage, isLocal, nodesAddr.get(i), op.batchSize,
-                                    ((AggregateOperator) op).fun, ((AggregateOperator) op).windowSize,
-                                    ((AggregateOperator) op).windowSlide), ActorRef.noSender());
-                }
-                // Split
-                else if(op instanceof SplitOperator) {
-                    master.tell(new CreateSplitMsg(op.name, color, posStage, isLocal, nodesAddr.get(i), op.batchSize),
-                                     ActorRef.noSender());
-                    needMerge = true;
-                }
-                // Merge
-                else if(op instanceof MergeOperator) {
-                    master.tell(new CreateMergeMsg(op.name, color, posStage, isLocal, nodesAddr.get(i), op.batchSize),
-                            ActorRef.noSender());
-                    needMerge = false;
-                }
-
-                // Change stage only if operators are not in parallel, i.e. they are not between split and merge
-                if(!needMerge) {
-                    master.tell(new ChangeStageMsg(), ActorRef.noSender());
-                }
-
-            }
-            System.out.println("Operators created! Total number of stages:");
-
-            /* SOURCE */
-
-            // Source
-            final ActorRef source = sys.actorOf(Source.props(), "source");
-            master.tell(new SourceMsg(source), source);
-
-        }
-
-
-
-
-    }
-
-    public static final void collaboratorNode() {
-        /* INITIALIZATION */
-
-        // Define the system where actors actually live
-        final ActorSystem sys = ActorSystem.create("System");
-        System.out.println( "System created!" );
-
-
     }
 
 

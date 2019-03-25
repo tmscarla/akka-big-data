@@ -30,6 +30,8 @@ public class Master extends AbstractActor {
     private int numMachines = 1;
     private int currentMachine = 0;
 
+    public int count = 0;
+
     // OneForOneStrategy: the strategy applies only to the crashed child
     // OneForAllStrategy: the strategy applies to all children
 
@@ -81,6 +83,7 @@ public class Master extends AbstractActor {
 
     private void onCreateMapMsg(CreateMapMsg mapMsg) {
         ActorRef mapWorker;
+        System.out.println(mapMsg.getAddress());
 
         // Local or remote deployment
         if (mapMsg.isLocal()) {

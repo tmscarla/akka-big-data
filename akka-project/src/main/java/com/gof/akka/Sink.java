@@ -9,6 +9,7 @@ import akka.actor.Props;
 
 import com.gof.akka.messages.BatchMessage;
 import com.gof.akka.messages.Message;
+import com.gof.akka.utils.ConsoleColors;
 
 import javax.swing.plaf.basic.BasicTabbedPaneUI;
 
@@ -34,7 +35,7 @@ public class Sink extends AbstractActor {
     }
 
     private final void onMessage(Message message) {
-        System.out.println("Sink received: " + message);
+        System.out.println(ConsoleColors.WHITE_BOLD + "Sink received: " + message);
         total++;
         System.out.println(total);
         // writeMessage(message);

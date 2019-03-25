@@ -6,7 +6,7 @@ import com.gof.akka.functions.FlatMapFunction;
 public class FlatMapOperator extends Operator {
     public FlatMapFunction fun;
 
-    public FlatMapOperator(String name, int batchSize) {
+    public FlatMapOperator(String name, int batchSize, FlatMapFunction fun) {
         super(name, batchSize);
         this.fun = fun;
     }

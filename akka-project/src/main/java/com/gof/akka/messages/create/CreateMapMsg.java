@@ -7,6 +7,7 @@ import com.gof.akka.functions.MapFunction;
 
 
 public class CreateMapMsg extends CreateMsg {
+    private static final long serialVersionUID = 3169449768254646491L;
     private MapFunction fun;
 
     public CreateMapMsg(String name, String color, int posStage, boolean isLocal,

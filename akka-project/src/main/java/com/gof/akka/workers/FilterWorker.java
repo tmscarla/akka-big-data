@@ -29,7 +29,6 @@ public class FilterWorker extends Worker {
         System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
         // Evaluate filter predicate
         final Boolean predicateResult = fun.predicate(message.getKey(), message.getVal());
-        System.out.println("Evaluated filter");
 
         // If predicate is true, send message to downstream worker
         if(predicateResult) {
