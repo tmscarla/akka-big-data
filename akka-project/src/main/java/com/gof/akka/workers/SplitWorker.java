@@ -32,11 +32,10 @@ public class SplitWorker extends Worker {
     @Override
     public void onMessage(Message message) {
         System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
-        // For each group of workers of the same operator
-        for(List<ActorRef> workers : downstream) {
-            // Send result to downstream worker
-            final int receiver = Math.abs(message.getKey().hashCode()) % workers.size();
-            workers.get(receiver).tell(message, self());
+        // For each operator forward message to the right worker
+        for(int i=0; i < downstream.get(0).size(); i++) {
+            final int receiver = Math.abs(message.getKey().hashCode()) % downstream.size();
+            downstream.get(receiver).get(i).tell(message, self());
         }
     }
 

@@ -181,32 +181,6 @@ public class Master extends AbstractActor {
 
     }
 
-    private void onCreateMergeMsg(CreateMergeMsg mergeMsg) {
-        ActorRef mergeWorker;
-
-        // Local or remote deployment
-        if (mergeMsg.isLocal()) {
-            mergeWorker = getContext().actorOf(MergeWorker.props(mergeMsg.getColor(),
-                    mergeMsg.getPosStage(),
-                    stageDeepCopy(oldStage),
-                    mergeMsg.getBatchSize()), mergeMsg.getName());
-        } else {
-            mergeWorker = getContext().actorOf(MergeWorker.props(mergeMsg.getColor(),
-                    mergeMsg.getPosStage(),
-                    stageDeepCopy(oldStage),
-                    mergeMsg.getBatchSize())
-                    .withDeploy(new Deploy(new RemoteScope(mergeMsg.getAddress()))), mergeMsg.getName());
-
-        }
-
-        // Update stage
-        stage.add(mergeWorker);
-        if (stage.size() == numMachines) {
-            isParallel = true;
-        }
-
-    }
-
     public void onCreateSplitMsg(CreateSplitMsg splitMsg) {
         ActorRef splitWorker;
 
@@ -240,21 +214,43 @@ public class Master extends AbstractActor {
             for (int i = 0; i < numMachines; i++) {
                 parallelStage.get(i).clear();
             }
+        }
+    }
 
+    private void onCreateMergeMsg(CreateMergeMsg mergeMsg) {
+        ActorRef mergeWorker;
+
+        // Local or remote deployment
+        if (mergeMsg.isLocal()) {
+            mergeWorker = getContext().actorOf(MergeWorker.props(mergeMsg.getColor(),
+                    mergeMsg.getPosStage(),
+                    stageDeepCopy(oldStage),
+                    mergeMsg.getBatchSize()), mergeMsg.getName());
+        } else {
+            mergeWorker = getContext().actorOf(MergeWorker.props(mergeMsg.getColor(),
+                    mergeMsg.getPosStage(),
+                    stageDeepCopy(oldStage),
+                    mergeMsg.getBatchSize())
+                    .withDeploy(new Deploy(new RemoteScope(mergeMsg.getAddress()))), mergeMsg.getName());
+
+        }
+
+        // Update stage
+        stage.add(mergeWorker);
+        if (stage.size() == numMachines) {
+            isParallel = true;
         }
 
     }
 
+
     public void updateStage(ActorRef actorRef) {
         if (isParallel) {
             parallelStage.get(currentMachine).add(actorRef);
-            if (parallelStage.get(currentMachine).size() == numMachines) {
-                currentMachine++;
-                if (currentMachine == numMachines) {
-                    currentMachine = 0;
-                }
+            currentMachine++;
+            if (currentMachine == numMachines) {
+                currentMachine = 0;
             }
-
         } else {
             stage.add(actorRef);
         }

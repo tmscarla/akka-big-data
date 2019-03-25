@@ -28,15 +28,29 @@ public class Starter {
                 "akka.tcp://sys@127.0.0.1:6121");
 
         List<Operator> operators = new ArrayList<>();
+
         Operator map = new MapOperator("Map", 10,
                 (String k, String v) -> new Message(k, v+"remoto"));
+
+        Operator split = new SplitOperator("Split", 10);
+
+
+        Operator mapParallel = new MapOperator("MapParallel", 10,
+                (String k, String v) -> new Message(k, v+"viggio"));
+
         Operator filter = new FilterOperator("Filter", 10,
                 (String k, String v) -> {if(Integer.parseInt(k) % 2 == 0) {
                     return true; } else { return false; }
                 });
+                //(String k, String v) -> {return true;});
+
+        Operator merge = new MergeOperator("Merge", 10);
 
         operators.add(map);
+        operators.add(split);
+        operators.add(mapParallel);
         operators.add(filter);
+        operators.add(merge);
 
         starterNode(starterNodeURI, collaboratorNodesURI, operators);
     }
@@ -62,22 +76,30 @@ public class Starter {
 
         // Check functions chain
         boolean needMerge = false;
+        int numStages = 0;
         for(Operator op : operators) {
             // Found a split, waiting for a matching merge
             if(op instanceof SplitOperator) {
                 if(!needMerge) {
                     needMerge = true;
+                    numStages += 2;
                 } else { // Found two consectuive split
                     throw new RuntimeException();
                 }
             }
-
             // Found merge
-            if(op instanceof MergeOperator) {
+            else if(op instanceof MergeOperator) {
                 if(needMerge) { // Split matched
                     needMerge = false;
+                    numStages++;
                 } else { // Found merge first or two consecutive merge
                     throw new RuntimeException();
+                }
+            }
+            // Other operators
+            else {
+                if(!needMerge) {
+                    numStages++;
                 }
             }
 
@@ -108,12 +130,13 @@ public class Starter {
 
         /* OPERATORS */
 
-        // For each operator
-        int posStage = 0;
+        // Instantiate operators in reverse order, updating downstream at each stage
+        int posStage = numStages + 1;
+        boolean needSplit = true;
+        Collections.reverse(operators);
         for(Operator op : operators) {
-            posStage++;
+            posStage--;
             boolean isLocal;
-            needMerge = false;
             String rootName = op.name;
 
             // Instantiate a worker on each machine
@@ -152,26 +175,28 @@ public class Starter {
                 }
                 // Split
                 else if(op instanceof SplitOperator) {
+                    if(i == 0) {
+                        master.tell(new ChangeStageMsg(), ActorRef.noSender());
+                    }
                     master.tell(new CreateSplitMsg(op.name, color, posStage, isLocal, nodesAddr.get(i), op.batchSize),
                             ActorRef.noSender());
-                    needMerge = true;
+                    needSplit = false;
                 }
                 // Merge
                 else if(op instanceof MergeOperator) {
                     master.tell(new CreateMergeMsg(op.name, color, posStage, isLocal, nodesAddr.get(i), op.batchSize),
                             ActorRef.noSender());
-                    needMerge = false;
+                    needSplit = true;
                 }
-
             }
 
             // Change stage only if operators are not in parallel, i.e. they are not between split and merge
-            if(!needMerge) {
+            if(!needSplit) {
                 master.tell(new ChangeStageMsg(), ActorRef.noSender());
             }
         }
 
-        System.out.println(String.format("Operators created! Total number of stages: %d", operators.size()));
+        System.out.println(String.format("Operators created! Total number of stages: %d", numStages));
 
         /* SOURCE */
 
