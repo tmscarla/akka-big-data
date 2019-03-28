@@ -2,6 +2,7 @@ package com.gof.akka.workers;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import akka.persistence.AbstractPersistentActor;
 import com.gof.akka.messages.BatchMessage;
 import com.gof.akka.messages.Message;
 import com.gof.akka.utils.ConsoleColors;
@@ -15,6 +16,7 @@ public abstract class Worker extends AbstractActor {
     protected List<ActorRef> downstream = new ArrayList<>();
     protected int batchSize = 10;
     protected List<Message> batchQueue = new ArrayList<>();
+    protected int messages = 0;
 
     public Worker() {}
 

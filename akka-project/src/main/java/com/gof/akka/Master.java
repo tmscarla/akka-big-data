@@ -1,24 +1,43 @@
 package com.gof.akka;
 
-import akka.actor.AbstractActor;
-import akka.actor.ActorRef;
-import akka.actor.Props;
-import akka.actor.Address;
+import akka.actor.*;
+import akka.dispatch.PriorityGenerator;
+import akka.dispatch.UnboundedStablePriorityMailbox;
+import akka.japi.pf.DeciderBuilder;
 import akka.remote.RemoteScope;
-import akka.actor.Deploy;
 
 import com.gof.akka.functions.AggregateFunction;
+import com.gof.akka.messages.Message;
 import com.gof.akka.messages.create.*;
 import com.gof.akka.functions.FilterFunction;
 import com.gof.akka.functions.MapFunction;
 import com.gof.akka.functions.FlatMapFunction;
 import com.gof.akka.workers.*;
 import com.sun.org.apache.bcel.internal.generic.ACONST_NULL;
+import scala.concurrent.duration.Duration;
+import com.typesafe.config.Config;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class Master extends AbstractActor {
+
+    static class RecoverMailbox extends UnboundedStablePriorityMailbox {
+        public RecoverMailbox(ActorSystem.Settings settings, Config config) {
+            // Create a new PriorityGenerator, lower priority means more important
+            super(
+                    new PriorityGenerator() {
+                        @Override
+                        public int gen(Object message) {
+                            if (message.equals("recovered"))
+                                return 0; // recovered messages should be put at the end of the queue
+                            else return 1; // default are FIFO
+                        }
+                    });
+        }
+    }
+
     // Stage for split operator
     private List<List<ActorRef>> parallelStage = new ArrayList<>();
 
@@ -67,6 +86,16 @@ public class Master extends AbstractActor {
                 .build();
     }
 
+    @Override
+    public SupervisorStrategy supervisorStrategy() {
+        return new OneForOneStrategy(//
+                -1, //
+                Duration.Inf(), //
+                DeciderBuilder //
+                        .match(RuntimeException.class, ex -> SupervisorStrategy.restart()) //
+                        .build());
+    }
+
     private void onChangeStage(ChangeStageMsg changeStageMsg) {
         oldStage = stage;
         stage = new ArrayList<>();
@@ -91,7 +120,7 @@ public class Master extends AbstractActor {
                     mapMsg.getPosStage(),
                     stageDeepCopy(oldStage),
                     mapMsg.getBatchSize(),
-                    mapMsg.getFun()), mapMsg.getName());
+                    mapMsg.getFun()).withMailbox(""), mapMsg.getName());
         } else {
             mapWorker = getContext().actorOf(MapWorker.props(mapMsg.getColor(),
                     mapMsg.getPosStage(),

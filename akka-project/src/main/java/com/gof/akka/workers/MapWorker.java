@@ -1,10 +1,12 @@
 package com.gof.akka.workers;
 
 import java.util.List;
+import java.util.Optional;
 
 import akka.actor.ActorRef;
 import akka.actor.Props;
 
+import akka.persistence.AbstractPersistentActor;
 import com.gof.akka.messages.BatchMessage;
 import com.gof.akka.messages.Message;
 import com.gof.akka.functions.MapFunction;
@@ -20,6 +22,13 @@ public class MapWorker extends Worker {
     }
 
     @Override
+    public void preRestart(Throwable reason, Optional<Object> message) throws Exception {
+        if(message.isPresent()) {
+            self().tell(message.get(), self());
+        }
+    }
+
+    @Override
     public Receive createReceive() {
         return receiveBuilder() //
                 .match(Message.class, this::onMessage) //
@@ -29,13 +38,19 @@ public class MapWorker extends Worker {
 
     @Override
     protected final void onMessage(Message message) {
-        System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
-        // Perform Map on received message
-        final Message result = fun.process(message.getKey(), message.getVal());
+        messages++;
 
-        // Send result to downstream worker
-        final int receiver = Math.abs(result.getKey().hashCode()) % downstream.size();
-        downstream.get(receiver).tell(result, self());
+        if (messages % 1990 == 0) {
+            throw new RuntimeException(color + self().path().name() + " Crashed!");
+        } else {
+            System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
+            // Perform Map on received message
+            final Message result = fun.process(message.getKey(), message.getVal());
+
+            // Send result to downstream worker
+            final int receiver = Math.abs(result.getKey().hashCode()) % downstream.size();
+            downstream.get(receiver).tell(result, self());
+        }
     }
 
     @Override

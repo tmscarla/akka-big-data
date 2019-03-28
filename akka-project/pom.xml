@@ -36,7 +36,17 @@
     </dependency>
     <dependency>
       <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-http_2.11</artifactId>
+      <version>10.1.5</version>
+    </dependency>
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-remote_2.11</artifactId>
+      <version>2.5.18</version>
+    </dependency>
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-persistence_2.11</artifactId>
       <version>2.5.18</version>
     </dependency>
     <dependency>

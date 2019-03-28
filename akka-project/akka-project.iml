@@ -19,11 +19,15 @@
     <orderEntry type="library" name="Maven: org.reactivestreams:reactive-streams:1.0.2" level="project" />
     <orderEntry type="library" name="Maven: com.typesafe:ssl-config-core_2.11:0.3.6" level="project" />
     <orderEntry type="library" name="Maven: org.scala-lang.modules:scala-parser-combinators_2.11:1.1.1" level="project" />
+    <orderEntry type="library" name="Maven: com.typesafe.akka:akka-http_2.11:10.1.5" level="project" />
+    <orderEntry type="library" name="Maven: com.typesafe.akka:akka-http-core_2.11:10.1.5" level="project" />
+    <orderEntry type="library" name="Maven: com.typesafe.akka:akka-parsing_2.11:10.1.5" level="project" />
     <orderEntry type="library" name="Maven: com.typesafe.akka:akka-remote_2.11:2.5.18" level="project" />
     <orderEntry type="library" name="Maven: io.netty:netty:3.10.6.Final" level="project" />
     <orderEntry type="library" name="Maven: io.aeron:aeron-driver:1.11.2" level="project" />
     <orderEntry type="library" name="Maven: io.aeron:aeron-client:1.11.2" level="project" />
     <orderEntry type="library" name="Maven: org.agrona:agrona:0.9.25" level="project" />
+    <orderEntry type="library" name="Maven: com.typesafe.akka:akka-persistence_2.11:2.5.18" level="project" />
     <orderEntry type="library" name="Maven: org.scala-lang.modules:scala-java8-compat_2.11:0.8.0" level="project" />
     <orderEntry type="library" name="Maven: org.scala-lang:scala-library:2.11.8" level="project" />
   </component>

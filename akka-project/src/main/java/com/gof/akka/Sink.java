@@ -35,14 +35,16 @@ public class Sink extends AbstractActor {
     }
 
     private final void onMessage(Message message) {
-        System.out.println(ConsoleColors.WHITE_BOLD + "Sink received: " + message);
+        System.out.println(ConsoleColors.PURPLE_BOLD_BRIGHT + "Sink received: " + message);
         total++;
         System.out.println(total);
         // writeMessage(message);
     }
 
     private final void onBatchMessage(BatchMessage batchMessage) {
-        System.out.println("Sink received batch: " + batchMessage);
+        System.out.println(ConsoleColors.PURPLE_BOLD_BRIGHT + "Sink received batch: " + batchMessage);
+        total += batchMessage.getMessages().size();
+        System.out.println(total);
     }
 
     private final void writeMessage(Message message) {

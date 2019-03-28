@@ -46,16 +46,13 @@ public class SplitWorker extends Worker {
             batchQueue.add(message);
 
             if(batchQueue.size() == batchSize) {
-                // For each group of workers of the same operator
-                for(List<ActorRef> workers : downstream) {
-
-                    // Use the key of the first message of the batch to determine the right partition
-                    final int receiver = Math.abs(batchQueue.get(0).getKey().hashCode()) % workers.size();
-                    workers.get(receiver).tell(new BatchMessage(batchQueue), self());
-
-                    // Empty queue
-                    batchQueue.clear();
+                for(int i=0; i < downstream.get(0).size(); i++) {
+                    final int receiver = Math.abs(batchQueue.get(0).getKey().hashCode()) % downstream.size();
+                    downstream.get(receiver).get(i).tell(new BatchMessage(batchQueue), self());
                 }
+
+                // Empty queue
+                batchQueue.clear();
             }
         }
     }

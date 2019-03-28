@@ -12,9 +12,8 @@ import akka.actor.ActorRef;
 import akka.actor.Address;
 import akka.actor.AddressFromURIString;
 
-import com.gof.akka.messages.Message;
 import com.gof.akka.messages.create.*;
-import com.gof.akka.functions.MapFunction;
+import com.gof.akka.messages.source.*;
 import com.gof.akka.operators.*;
 import com.gof.akka.utils.ConsoleColors;
 import com.typesafe.config.Config;
@@ -22,37 +21,13 @@ import com.typesafe.config.ConfigFactory;
 
 
 public class Starter {
+
     public static void main( String[] args ) throws InterruptedException, IOException {
         String starterNodeURI = "akka.tcp://sys@127.0.0.1:6000";
         List<String> collaboratorNodesURI = Arrays.asList("akka.tcp://sys@127.0.0.1:6120",
-                "akka.tcp://sys@127.0.0.1:6121");
+                                                          "akka.tcp://sys@127.0.0.1:6121");
 
-        List<Operator> operators = new ArrayList<>();
-
-        Operator map = new MapOperator("Map", 10,
-                (String k, String v) -> new Message(k, v+"remoto"));
-
-        Operator split = new SplitOperator("Split", 10);
-
-
-        Operator mapParallel = new MapOperator("MapParallel", 10,
-                (String k, String v) -> new Message(k, v+"viggio"));
-
-        Operator filter = new FilterOperator("Filter", 10,
-                (String k, String v) -> {if(Integer.parseInt(k) % 2 == 0) {
-                    return true; } else { return false; }
-                });
-                //(String k, String v) -> {return true;});
-
-        Operator merge = new MergeOperator("Merge", 10);
-
-        operators.add(map);
-        operators.add(split);
-        operators.add(mapParallel);
-        operators.add(filter);
-        operators.add(merge);
-
-        starterNode(starterNodeURI, collaboratorNodesURI, operators);
+        starterNode(starterNodeURI, collaboratorNodesURI, Job.jobOne.getOperators());
     }
 
     public static final void starterNode(String starterNodeURI,
@@ -132,10 +107,25 @@ public class Starter {
 
         // Instantiate operators in reverse order, updating downstream at each stage
         int posStage = numStages + 1;
-        boolean needSplit = true;
+        boolean needSplit = false;
+        boolean countedParallelStage = false;
         Collections.reverse(operators);
+
+        // For each operator in the list
         for(Operator op : operators) {
-            posStage--;
+            // Count the position of the operator in the stage
+            if(!needSplit) {
+                posStage--;
+                countedParallelStage = false;
+            } else {
+                if(!countedParallelStage) {
+                    posStage--;
+                    countedParallelStage = true;
+                } else if(op instanceof SplitOperator) {
+                    posStage--;
+                }
+            }
+
             boolean isLocal;
             String rootName = op.name;
 
@@ -175,6 +165,7 @@ public class Starter {
                 }
                 // Split
                 else if(op instanceof SplitOperator) {
+                    // If is first split worker change stage
                     if(i == 0) {
                         master.tell(new ChangeStageMsg(), ActorRef.noSender());
                     }
@@ -187,6 +178,10 @@ public class Starter {
                     master.tell(new CreateMergeMsg(op.name, color, posStage, isLocal, nodesAddr.get(i), op.batchSize),
                             ActorRef.noSender());
                     needSplit = true;
+                    // If is last merge worker change stage
+                    if(i == numMachines-1) {
+                        master.tell(new ChangeStageMsg(), ActorRef.noSender());
+                    }
                 }
             }
 
@@ -203,15 +198,18 @@ public class Starter {
         // Source
         final ActorRef source = sys.actorOf(Source.props(), "source");
         master.tell(new SourceMsg(source), source);
+        Thread.sleep(2000);
+        source.tell(new ChangeModeSourceMsg(false), ActorRef.noSender());
+        Thread.sleep(2000);
+        /*source.tell(new RandSourceMsg(100, 500), ActorRef.noSender());*/
+        source.tell(new LoadSourceMsg("/Users/tommasoscarlatti/Desktop/PoliMi/akka-bigdata/" +
+                "akka-project/data/prova.csv"), ActorRef.noSender());
+        Thread.sleep(7000);
+        source.tell(new ChangeModeSourceMsg(true), ActorRef.noSender());
+        Thread.sleep(7000);
+
 
     }
-
-    private static final Source createSource(final List<ActorRef> downstream, final String filePath) {
-        final Source src = new Source(downstream, filePath);
-        new Thread(src).start();
-        return src;
-    }
-
 
     private static final List<ActorRef> createSink(final ActorSystem sys) {
         return Collections.singletonList(sys.actorOf(Sink.props(), "sink"));
