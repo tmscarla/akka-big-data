@@ -93,6 +93,7 @@ public class Source  extends AbstractActor {
 
     // Start sending randomly generated messages
     private void onRandomMsg(RandSourceMsg message) {
+        running = true;
         new Thread(() -> {
             while(running) {
                 if(!suspended) {

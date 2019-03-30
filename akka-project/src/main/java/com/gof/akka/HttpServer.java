@@ -28,10 +28,7 @@ import akka.http.javadsl.unmarshalling.Unmarshaller;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.gof.akka.Starter;
-import com.gof.akka.messages.source.ChangeModeSourceMsg;
-import com.gof.akka.messages.source.ResumeSourceMsg;
-import com.gof.akka.messages.source.StopSourceMsg;
-import com.gof.akka.messages.source.SuspendSourceMsg;
+import com.gof.akka.messages.source.*;
 import com.gof.akka.utils.ConsoleColors;
 import scala.collection.script.Start;
 import scala.concurrent.Await;
@@ -54,7 +51,6 @@ import static akka.http.javadsl.server.PathMatchers.integerSegment;
 import static akka.http.javadsl.server.PathMatchers.segment;
 
 
-// HttpServer definition
 class HttpServer extends HttpApp {
     // Actor System on the starter node
     private static ActorSystem system;
@@ -103,8 +99,12 @@ class HttpServer extends HttpApp {
 
     @Override
     protected Route routes() {
+        // SOURCE
         return pathPrefix("source", () ->
-                concat(path("resume", () -> get(() -> {
+
+                concat(
+                        // RESUME
+                        path("resume", () -> get(() -> {
                             try {
                                 ActorRef sourceRef = getSourceFromSystem(system);
                                 sourceRef.tell(new ResumeSourceMsg(), ActorRef.noSender());
@@ -113,6 +113,8 @@ class HttpServer extends HttpApp {
                                 return complete("Exception!");
                             }
                         })),
+
+                        // SUSPEND
                         path("suspend", () -> get(() -> {
                             try {
                                 ActorRef sourceRef = getSourceFromSystem(system);
@@ -122,6 +124,8 @@ class HttpServer extends HttpApp {
                                 return complete("Exception!");
                             }
                         })),
+
+                        // MODE
                         path("mode", () -> post(() ->  entity(
                             Jackson.unmarshaller(SourceMode.class), mode -> {
                                 try {
@@ -137,6 +141,30 @@ class HttpServer extends HttpApp {
                                     return complete("Exception!");
                                 }
                         }))),
+
+                        // RANDOM
+                        path("random", () -> post(() ->  entity(
+                                Jackson.unmarshaller(RandomSource.class), randomSource -> {
+                                    try {
+                                        // Stop source thread
+                                        ActorRef sourceRef = getSourceFromSystem(system);
+                                        sourceRef.tell(new StopSourceMsg(), ActorRef.noSender());
+                                        Thread.sleep(2000);
+
+                                        // New random source
+                                        int keySize = randomSource.getKeySize();
+                                        int valueSize = randomSource.getValueSize();
+                                        sourceRef.tell(new RandSourceMsg(keySize, valueSize), ActorRef.noSender());
+
+                                        return complete("Initialized new random source with: " +
+                                                String.format("keySize = %d, valueSize = %d\n", keySize, valueSize));
+
+                                    } catch (Exception e) {
+                                        return complete("Exception on initialize random source!");
+                                    }
+                                }))),
+
+                        // JOBS
                         path("job", () -> post(() -> entity(
                                 Jackson.unmarshaller(JobId.class), jobId -> {
                                     try {
@@ -177,7 +205,6 @@ class HttpServer extends HttpApp {
 
     /* MODELS */
 
-
     private static class JobId {
         private final int id;
 
@@ -209,7 +236,8 @@ class HttpServer extends HttpApp {
         private int keySize;
         private int valueSize;
 
-        public RandomSource(int keySize, int valueSize) {
+        @JsonCreator
+        public RandomSource(@JsonProperty("keySize") int keySize, @JsonProperty("valueSize") int valueSize) {
             this.keySize = keySize;
             this.valueSize = valueSize;
         }
