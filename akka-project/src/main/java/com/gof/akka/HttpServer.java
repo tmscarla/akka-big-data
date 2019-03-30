@@ -4,11 +4,6 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
 import akka.actor.ActorSystem;
 import akka.actor.Terminated;
-import akka.http.javadsl.model.ContentTypes;
-import akka.http.javadsl.model.HttpEntities;
-import akka.http.javadsl.model.HttpResponse;
-import akka.http.javadsl.model.StatusCodes;
-import akka.http.javadsl.model.headers.ContentType;
 import akka.http.javadsl.server.HttpApp;
 import akka.http.javadsl.server.Route;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -16,38 +11,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import static akka.http.javadsl.server.Directives.route;
 
-import akka.http.javadsl.common.JsonEntityStreamingSupport;
 import akka.http.javadsl.marshallers.jackson.Jackson;
-import akka.http.javadsl.marshalling.Marshaller;
-import akka.http.javadsl.model.*;
-import akka.http.javadsl.model.headers.Accept;
-import akka.http.javadsl.server.*;
-import akka.http.javadsl.unmarshalling.StringUnmarshallers;
-import akka.http.javadsl.common.EntityStreamingSupport;
-import akka.http.javadsl.unmarshalling.Unmarshaller;
 
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.gof.akka.Starter;
 import com.gof.akka.messages.source.*;
 import com.gof.akka.utils.ConsoleColors;
-import scala.collection.script.Start;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static akka.http.javadsl.server.Directives.complete;
-import static akka.http.javadsl.server.Directives.get;
 import static akka.http.javadsl.server.Directives.path;
-import static akka.http.javadsl.server.Directives.put;
 import static akka.http.javadsl.server.Directives.route;
 
-import static akka.http.javadsl.server.PathMatchers.integerSegment;
 import static akka.http.javadsl.server.PathMatchers.segment;
 
 
@@ -55,7 +35,7 @@ class HttpServer extends HttpApp {
     // Actor System on the starter node
     private static ActorSystem system;
     private static String starterNodeURI = "akka.tcp://sys@127.0.0.1:6000";
-    private static List<String> collaboratorNodesURI = Arrays.asList("akka.tcp://sys@127.0.0.1:6120",
+    private static List<String> collaboratorNodesURI = Arrays.asList("akka.tcp://sys@10.0.0.1:6120",
             "akka.tcp://sys@127.0.0.1:6121");
 
     public static void main(String[] args) throws InterruptedException, ExecutionException {
@@ -125,7 +105,7 @@ class HttpServer extends HttpApp {
                             }
                         })),
 
-                        // MODE
+                        // MODE ['STREAM' | 'BATCH']
                         path("mode", () -> post(() ->  entity(
                             Jackson.unmarshaller(SourceMode.class), mode -> {
                                 try {
@@ -142,7 +122,7 @@ class HttpServer extends HttpApp {
                                 }
                         }))),
 
-                        // RANDOM
+                        // RANDOM SOURCE
                         path("random", () -> post(() ->  entity(
                                 Jackson.unmarshaller(RandomSource.class), randomSource -> {
                                     try {
@@ -163,6 +143,27 @@ class HttpServer extends HttpApp {
                                         return complete("Exception on initialize random source!");
                                     }
                                 }))),
+
+                        // READ FROM CSV
+                        path("read", () -> post(() ->  entity(
+                                Jackson.unmarshaller(ReadSource.class), readSource -> {
+                                    try {
+                                        // Stop source thread
+                                        ActorRef sourceRef = getSourceFromSystem(system);
+                                        sourceRef.tell(new StopSourceMsg(), ActorRef.noSender());
+                                        Thread.sleep(2000);
+
+                                        // Load (key, value) pairs from a csv file with two cols
+                                        String filePath = readSource.getFilePath();
+                                        sourceRef.tell(new ReadSourceMsg(filePath), ActorRef.noSender());
+
+                                        return complete("Initialized new source reading from: " + filePath + "\n");
+
+                                    } catch (Exception e) {
+                                        return complete("Exception on initialize csv source!");
+                                    }
+                                }))),
+
 
                         // JOBS
                         path("job", () -> post(() -> entity(
@@ -213,7 +214,7 @@ class HttpServer extends HttpApp {
             this.id = id;
         }
 
-        public int getId() {
+        int getId() {
             return id;
         }
 
@@ -227,7 +228,7 @@ class HttpServer extends HttpApp {
             this.mode = mode;
         }
 
-        public String getMode() {
+        String getMode() {
             return mode;
         }
     }
@@ -242,14 +243,27 @@ class HttpServer extends HttpApp {
             this.valueSize = valueSize;
         }
 
-        public int getKeySize() {
+        int getKeySize() {
             return keySize;
         }
 
-        public int getValueSize() {
+        int getValueSize() {
             return valueSize;
         }
 
+    }
+
+    private static class ReadSource {
+        private String filePath;
+
+        @JsonCreator
+        public ReadSource(@JsonProperty("filePath") String filePath) {
+            this.filePath = filePath;
+        }
+
+        String getFilePath() {
+            return filePath;
+        }
     }
 }
 

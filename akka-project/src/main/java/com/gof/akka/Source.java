@@ -62,7 +62,7 @@ public class Source  extends AbstractActor {
                 .match(ResumeSourceMsg.class, this::resumeSource) //
                 .match(StopSourceMsg.class, this::stopSource) //
                 .match(RandSourceMsg.class, this::onRandomMsg) //
-                .match(LoadSourceMsg.class, this::onLoadMsg) //
+                .match(ReadSourceMsg.class, this::onReadMsg) //
                 .build();
     }
 
@@ -94,6 +94,7 @@ public class Source  extends AbstractActor {
     // Start sending randomly generated messages
     private void onRandomMsg(RandSourceMsg message) {
         running = true;
+        suspended = false;
         new Thread(() -> {
             while(running) {
                 if(!suspended) {
@@ -108,20 +109,30 @@ public class Source  extends AbstractActor {
     }
 
     // Start sending messages read from a source csv file
-    private void onLoadMsg(LoadSourceMsg message) {
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(message.getFilePath()));
-            String line;
+    private void onReadMsg(ReadSourceMsg message) {
+        String a = "/Users/tommasoscarlatti/Desktop/PoliMi/akka-bigdata/akka-project/data/cuba_news.csv";
+        running = true;
+        suspended = false;
+        new Thread(() -> {
             try {
-                while ((line = reader.readLine()) != null) {
-                    readMessage(line);
+                BufferedReader reader = new BufferedReader(new FileReader(message.getFilePath()));
+                String line;
+                while(running) {
+                    if(!suspended) {
+                        try {
+                            if((line = reader.readLine()) != null) {
+                                readMessage(line);
+                            }
+                        } catch (IOException | InterruptedException e) {
+                            running = false;
+                        }
+                    }
                 }
-            } catch (IOException | InterruptedException e) {
-                e.printStackTrace();
+            } catch (FileNotFoundException e) {
+                System.out.println("Source file not found!");
             }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+        }).start();
+
     }
 
     /* MESSAGE CRAFTING */
