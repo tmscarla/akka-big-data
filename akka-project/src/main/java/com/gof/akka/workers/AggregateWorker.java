@@ -20,7 +20,7 @@ public class AggregateWorker extends Worker {
     private final Map<String, List<String>> windows = new HashMap<>();
 
     public AggregateWorker(String color, int stagePos, final List<ActorRef> downstream, final int batchSize,
-                           final int windowSize, final int windowSlide, final AggregateFunction fun) {
+                            final AggregateFunction fun, final int windowSize, final int windowSlide) {
         super(color, stagePos, downstream, batchSize);
         this.windowSize = windowSize;
         this.windowSlide = windowSlide;

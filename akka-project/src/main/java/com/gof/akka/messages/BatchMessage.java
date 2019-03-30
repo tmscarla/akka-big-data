@@ -2,6 +2,7 @@ package com.gof.akka.messages;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 // BatchMessage, a message which contains a list of different Message objects
@@ -20,12 +21,17 @@ public class BatchMessage implements Serializable {
     @Override
     public final String toString() {
         String repr = "[";
-        for(Message m : messages) {
-            repr = repr.concat("(" + m.getKey() + ", " + m.getVal() + ")");
+        Iterator<Message> itr = messages.iterator();
+        while (itr.hasNext()) {
+            Message msg = itr.next();
+            repr = repr.concat("(" + msg.getKey() + ", " + msg.getVal() + ")");
+
+            if (itr.hasNext()) {
+                repr = repr.concat(",");
+            }
         }
         repr = repr.concat("]");
 
         return repr;
     }
-
 }

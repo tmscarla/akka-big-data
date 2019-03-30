@@ -18,7 +18,8 @@ public class Sink extends AbstractActor {
     private Boolean verbose = true;
     private Boolean firstWrite = false;
 
-    int total = 0;
+    private int total = 0;
+    private int totalBatches = 0;
 
     public Sink() {}
 
@@ -37,14 +38,16 @@ public class Sink extends AbstractActor {
     private final void onMessage(Message message) {
         System.out.println(ConsoleColors.PURPLE_BOLD_BRIGHT + "Sink received: " + message);
         total++;
-        System.out.println(total);
+        System.out.println(String.format("Total messages: %d", total));
         // writeMessage(message);
     }
 
     private final void onBatchMessage(BatchMessage batchMessage) {
         System.out.println(ConsoleColors.PURPLE_BOLD_BRIGHT + "Sink received batch: " + batchMessage);
+        totalBatches++;
         total += batchMessage.getMessages().size();
-        System.out.println(total);
+        System.out.println(String.format("Total batches: %d", totalBatches));
+        System.out.println(String.format("Total messages: %d", total));
     }
 
     private final void writeMessage(Message message) {

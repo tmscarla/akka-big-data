@@ -11,5 +11,7 @@ public abstract class Operator {
         this.batchSize = batchSize;
     }
 
+    public abstract Operator clone();
+
 }
 

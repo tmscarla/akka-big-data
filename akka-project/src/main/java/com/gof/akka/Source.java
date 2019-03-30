@@ -26,10 +26,17 @@ public class Source  extends AbstractActor {
     private boolean loadFromFile = false;
     private int sleepTime = 400;
     private volatile boolean suspended = false;
+    private int total = 0;
+    private int totalBatches = 0;
 
     private int batchSize = 3;
     private static boolean batchMode = false;
     private List <Message> batchQueue = new ArrayList<>();
+    private volatile boolean running = true;
+
+    public void stop() {
+        running = false;
+    }
 
     /* CONSTRUCTORS */
 
@@ -53,6 +60,7 @@ public class Source  extends AbstractActor {
                 .match(SourceMsg.class, this::setDownstream) //
                 .match(SuspendSourceMsg.class, this::suspendSource) //
                 .match(ResumeSourceMsg.class, this::resumeSource) //
+                .match(StopSourceMsg.class, this::stopSource) //
                 .match(RandSourceMsg.class, this::onRandomMsg) //
                 .match(LoadSourceMsg.class, this::onLoadMsg) //
                 .build();
@@ -65,7 +73,11 @@ public class Source  extends AbstractActor {
 
     // Switch mode from batch to stream and vice versa
     private void changeMode(ChangeModeSourceMsg message) {
-        System.out.println(ConsoleColors.RESET + "Mode changed!");
+        if(message.isBatchMode()) {
+            System.out.println(ConsoleColors.RESET + "System switched to batch mode!");
+        } else {
+            System.out.println(ConsoleColors.RESET + "System switched to stream mode!");
+        }
         batchMode = message.isBatchMode();
     }
 
@@ -77,15 +89,17 @@ public class Source  extends AbstractActor {
         suspended = false;
     }
 
+    private void stopSource(StopSourceMsg message) { running = false; }
+
     // Start sending randomly generated messages
     private void onRandomMsg(RandSourceMsg message) {
         new Thread(() -> {
-            while(true) {
-                while (!suspended) {
+            while(running) {
+                if(!suspended) {
                     try {
                         randomMessage(message.getKeySize(), message.getValueSize());
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        running = false;
                     }
                 }
             }
@@ -135,7 +149,13 @@ public class Source  extends AbstractActor {
             batchQueue.add(msg);
             if(batchQueue.size() == batchSize) {
                 BatchMessage batchMsg = new BatchMessage(batchQueue);
+                totalBatches++;
+                total += batchMsg.getMessages().size();
+
                 System.out.println(ConsoleColors.YELLOW_BOLD_BRIGHT + "Source sending batch " + batchMsg);
+                System.out.println(String.format("Total messages: %d", total));
+                System.out.println(ConsoleColors.YELLOW_BOLD_BRIGHT + String.format("Total batches: %d", totalBatches));
+
                 final int receiver = Math.abs(batchQueue.get(0).getKey().hashCode()) % downstream.size();
                 downstream.get(receiver).tell(batchMsg, self());
                 batchQueue.clear();
@@ -144,7 +164,10 @@ public class Source  extends AbstractActor {
         }
         // Streaming
         else {
+            total++;
             System.out.println(ConsoleColors.YELLOW_BOLD_BRIGHT + "Source sending " + msg);
+            System.out.println(String.format("Total messages: %d", total));
+
             final int receiver = Math.abs(msg.getKey().hashCode()) % downstream.size();
             downstream.get(receiver).tell(msg, ActorRef.noSender());
             Thread.sleep(sleepTime);

@@ -14,4 +14,9 @@ public class AggregateOperator extends Operator {
         this.windowSize = windowSize;
         this.windowSlide = windowSlide;
     }
+
+    @Override
+    public AggregateOperator clone() {
+        return new AggregateOperator(this.name, this.batchSize, this.fun, this.windowSize, this.windowSlide);
+    }
 }

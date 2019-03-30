@@ -10,4 +10,9 @@ public class FlatMapOperator extends Operator {
         super(name, batchSize);
         this.fun = fun;
     }
+
+    @Override
+    public FlatMapOperator clone() {
+        return new FlatMapOperator(this.name, this.batchSize, this.fun);
+    }
 }

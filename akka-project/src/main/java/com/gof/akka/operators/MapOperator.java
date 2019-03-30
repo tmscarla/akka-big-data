@@ -9,4 +9,9 @@ public class MapOperator extends Operator {
         super(name, batchSize);
         this.fun = fun;
     }
+
+    @Override
+    public MapOperator clone() {
+        return new MapOperator(this.name, this.batchSize, this.fun);
+    }
 }

@@ -6,18 +6,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import akka.actor.ActorSystem;
-import akka.actor.ActorRef;
-import akka.actor.Address;
-import akka.actor.AddressFromURIString;
+import akka.actor.*;
 
+import akka.util.Timeout;
 import com.gof.akka.messages.create.*;
 import com.gof.akka.messages.source.*;
 import com.gof.akka.operators.*;
 import com.gof.akka.utils.ConsoleColors;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import org.omg.CORBA.TIMEOUT;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.FiniteDuration;
 
 
 public class Starter {
@@ -28,9 +31,10 @@ public class Starter {
                                                           "akka.tcp://sys@127.0.0.1:6121");
 
         starterNode(starterNodeURI, collaboratorNodesURI, Job.jobOne.getOperators());
+
     }
 
-    public static final void starterNode(String starterNodeURI,
+    public static final ActorSystem starterNode(String starterNodeURI,
                                          List<String> collaboratorNodesURI,
                                          List<Operator> operators) throws InterruptedException {
         /* INITIALIZATION */
@@ -58,7 +62,8 @@ public class Starter {
                 if(!needMerge) {
                     needMerge = true;
                     numStages += 2;
-                } else { // Found two consectuive split
+                } else { // Found two consecutive split
+                    System.out.println("Found two consecutive split!");
                     throw new RuntimeException();
                 }
             }
@@ -68,6 +73,7 @@ public class Starter {
                     needMerge = false;
                     numStages++;
                 } else { // Found merge first or two consecutive merge
+                    System.out.println("Found merge first or two consecutive merge!");
                     throw new RuntimeException();
                 }
             }
@@ -109,10 +115,16 @@ public class Starter {
         int posStage = numStages + 1;
         boolean needSplit = false;
         boolean countedParallelStage = false;
-        Collections.reverse(operators);
+
+        // Deep copy of operators before reverse
+        List<Operator> reverseOperators = new ArrayList<>();
+        for(Operator op : operators) {
+            reverseOperators.add(op.clone());
+        }
+        Collections.reverse(reverseOperators);
 
         // For each operator in the list
-        for(Operator op : operators) {
+        for(Operator op : reverseOperators) {
             // Count the position of the operator in the stage
             if(!needSplit) {
                 posStage--;
@@ -201,13 +213,11 @@ public class Starter {
         Thread.sleep(2000);
         source.tell(new ChangeModeSourceMsg(false), ActorRef.noSender());
         Thread.sleep(2000);
-        /*source.tell(new RandSourceMsg(100, 500), ActorRef.noSender());*/
-        source.tell(new LoadSourceMsg("/Users/tommasoscarlatti/Desktop/PoliMi/akka-bigdata/" +
-                "akka-project/data/prova.csv"), ActorRef.noSender());
-        Thread.sleep(7000);
-        source.tell(new ChangeModeSourceMsg(true), ActorRef.noSender());
-        Thread.sleep(7000);
+        source.tell(new RandSourceMsg(100, 500), ActorRef.noSender());
+        Thread.sleep(2000);
+        //source.tell(new SuspendSourceMsg(), ActorRef.noSender());
 
+        return sys;
 
     }
 

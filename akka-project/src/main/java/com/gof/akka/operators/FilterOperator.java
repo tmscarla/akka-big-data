@@ -10,4 +10,9 @@ public class FilterOperator extends Operator {
         super(name, batchSize);
         this.fun = fun;
     }
+
+    @Override
+    public FilterOperator clone() {
+        return new FilterOperator(this.name, this.batchSize, this.fun);
+    }
 }
