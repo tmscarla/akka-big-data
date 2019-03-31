@@ -112,7 +112,6 @@ public class Master extends AbstractActor {
 
     private void onCreateMapMsg(CreateMapMsg mapMsg) {
         ActorRef mapWorker;
-        System.out.println(mapMsg.getAddress());
 
         // Local or remote deployment
         if (mapMsg.isLocal()) {

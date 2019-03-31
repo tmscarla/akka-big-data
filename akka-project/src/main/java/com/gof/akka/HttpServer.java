@@ -24,25 +24,18 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import static akka.http.javadsl.server.Directives.complete;
-import static akka.http.javadsl.server.Directives.path;
-import static akka.http.javadsl.server.Directives.route;
-
-import static akka.http.javadsl.server.PathMatchers.segment;
-
 
 class HttpServer extends HttpApp {
     // Actor System on the starter node
     private static ActorSystem system;
     private static String starterNodeURI = "akka.tcp://sys@127.0.0.1:6000";
-    private static List<String> collaboratorNodesURI = Arrays.asList("akka.tcp://sys@10.0.0.1:6120",
-            "akka.tcp://sys@127.0.0.1:6121");
+    private static List<String> collaboratorNodesURI = Arrays.asList("akka.tcp://sys@127.0.0.1:6120",
+                                                                     "akka.tcp://sys@127.0.0.1:6121");
 
     public static void main(String[] args) throws InterruptedException, ExecutionException {
         // Starting the system
         System.out.println(ConsoleColors.RESET + "Starting the system...");
-        system = Starter.starterNode(starterNodeURI, collaboratorNodesURI, Job.jobOne.getOperators());
-        System.out.println("done.");
+        system = Starter.starterNode(starterNodeURI, collaboratorNodesURI, Job.jobTwo.getOperators());
 
         // Starting the server
         System.out.println(ConsoleColors.RESET + "Server online at http://localhost:8080/");
@@ -80,8 +73,7 @@ class HttpServer extends HttpApp {
     @Override
     protected Route routes() {
         // SOURCE
-        return pathPrefix("source", () ->
-
+        return concat(pathPrefix("source", () ->
                 concat(
                         // RESUME
                         path("resume", () -> get(() -> {
@@ -189,7 +181,7 @@ class HttpServer extends HttpApp {
                                                     Job.jobTwo.getOperators());
                                         } else {
                                             system = Starter.starterNode(starterNodeURI, collaboratorNodesURI,
-                                                    Job.jobTwo.getOperators());
+                                                    Job.jobThree.getOperators());
                                         }
 
                                         return complete(String.format("Stopped previous Job. Started Job %d!\n",
@@ -199,8 +191,19 @@ class HttpServer extends HttpApp {
                                         return complete("Exception while submitting new job.");
                                     }
                                 }))
-                        ))
-        );
+                        ))),
+
+                        concat(
+
+                        // STATS
+                        path("stats", () -> get(() -> {
+                            try {
+                                return complete("Stats!\n");
+                            } catch (Exception e) {
+                                return complete("Exception!");
+                            }
+                        })))
+                );
     }
 
 

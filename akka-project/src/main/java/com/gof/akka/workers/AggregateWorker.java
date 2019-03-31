@@ -17,7 +17,10 @@ public class AggregateWorker extends Worker {
     private final int windowSize;
     private final int windowSlide;
     private final AggregateFunction fun;
-    private final Map<String, List<String>> windows = new HashMap<>();
+
+    // Uses a map to group messages with the same hash code of the key.
+    // If the size is reached, compute aggregation and then slide.
+    private final Map<Integer, List<String>> windows = new HashMap<>();
 
     public AggregateWorker(String color, int stagePos, final List<ActorRef> downstream, final int batchSize,
                             final AggregateFunction fun, final int windowSize, final int windowSlide) {
@@ -43,10 +46,10 @@ public class AggregateWorker extends Worker {
         final String value = message.getVal();
 
         // List of current values of the window
-        List<String> winValues = windows.get(key);
+        List<String> winValues = windows.get(key.hashCode());
         if (winValues == null) {
             winValues = new ArrayList<>();
-            windows.put(key, winValues);
+            windows.put(key.hashCode(), winValues);
         }
         winValues.add(value);
 
@@ -57,7 +60,7 @@ public class AggregateWorker extends Worker {
             downstream.get(receiver).tell(result, self());
 
             // Slide window
-            windows.put(key, winValues.subList(windowSlide, winValues.size()));
+            windows.put(key.hashCode(), winValues.subList(windowSlide, winValues.size()));
         }
     }
 
@@ -71,21 +74,22 @@ public class AggregateWorker extends Worker {
             final String value = message.getVal();
 
             // List of current values of the window
-            List<String> winValues = windows.get(key);
+            List<String> winValues = windows.get(key.hashCode());
             if (winValues == null) {
                 winValues = new ArrayList<>();
-                windows.put(key, winValues);
+                windows.put(key.hashCode(), winValues);
             }
             winValues.add(value);
 
-            // Slide window
-            windows.put(key, winValues.subList(windowSlide, winValues.size()));
-
-            // If the size is reached
+            // If window size is reached
             if (winValues.size() == windowSize) {
                 final Message result = fun.process(key, winValues);
                 batchQueue.add(result);
 
+                // Slide window
+                windows.put(key.hashCode(), winValues.subList(windowSlide, winValues.size()));
+
+                // If batch size is reached
                 if(batchQueue.size() == batchSize) {
                     // Use the key of the first message to determine the right partition
                     final int receiver = Math.abs(batchQueue.get(0).getKey().hashCode()) % downstream.size();
@@ -94,9 +98,6 @@ public class AggregateWorker extends Worker {
                     // Empty queue
                     batchQueue.clear();
                 }
-                final int receiver = Math.abs(result.getKey().hashCode()) % downstream.size();
-                downstream.get(receiver).tell(result, self());
-
             }
         }
     }
