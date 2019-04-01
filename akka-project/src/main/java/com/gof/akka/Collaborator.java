@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Collaborator {
     public static void main( String[] args ) throws InterruptedException, IOException {
-        String configPath = "conf/collaborator2.conf";
+        String configPath = "conf/collaborator1.conf";
         collaboratorNode(configPath);
     }
 

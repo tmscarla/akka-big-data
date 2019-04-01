@@ -40,7 +40,11 @@ public class AggregateWorker extends Worker {
 
     @Override
     protected final void onMessage(Message message) {
+        long startTime = System.nanoTime();
+        singleRecMsg++;
+        recMsg++;
         System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
+
         // Get key and value of the message
         final String key = message.getKey();
         final String value = message.getVal();
@@ -58,6 +62,7 @@ public class AggregateWorker extends Worker {
             final Message result = fun.process(key, winValues);
             final int receiver = Math.abs(result.getKey().hashCode()) % downstream.size();
             downstream.get(receiver).tell(result, self());
+            sentMsg++;
 
             // Slide window
             windows.put(key.hashCode(), winValues.subList(windowSlide, winValues.size()));
@@ -67,7 +72,12 @@ public class AggregateWorker extends Worker {
 
     @Override
     protected void onBatchMessage(BatchMessage batchMessage) {
+        long startTime = System.nanoTime();
+        recBatches++;
+        recMsg += batchMessage.getMessages().size();
         System.out.println(color + self().path().name() + "(" + stagePos + ") received batch: " + batchMessage);
+
+        // For each message in the batch
         for(Message message : batchMessage.getMessages()) {
             // Get key and value of the message
             final String key = message.getKey();
@@ -94,12 +104,16 @@ public class AggregateWorker extends Worker {
                     // Use the key of the first message to determine the right partition
                     final int receiver = Math.abs(batchQueue.get(0).getKey().hashCode()) % downstream.size();
                     downstream.get(receiver).tell(new BatchMessage(batchQueue), self());
+                    sentBatches++;
+                    sentMsg += batchSize;
 
                     // Empty queue
                     batchQueue.clear();
                 }
             }
         }
+
+        processingBatchTime = avgProcBatchTime(System.nanoTime() - startTime);
     }
 
     static public final Props props(String color, int stagePos, List<ActorRef> downstream, int batchSize,

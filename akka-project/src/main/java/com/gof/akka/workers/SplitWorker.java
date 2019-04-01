@@ -31,17 +31,28 @@ public class SplitWorker extends Worker {
 
     @Override
     public void onMessage(Message message) {
+        long startTime = System.nanoTime();
+        singleRecMsg++;
+        recMsg++;
         System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
+
         // For each operator forward message to the right worker
         for(int i=0; i < downstream.get(0).size(); i++) {
             final int receiver = Math.abs(message.getKey().hashCode()) % downstream.size();
             downstream.get(receiver).get(i).tell(message, self());
+            sentMsg++;
         }
+
+        processingTime = avgProcTime(System.nanoTime() - startTime);
     }
 
     @Override
     protected void onBatchMessage(BatchMessage batchMessage) {
+        long startTime = System.nanoTime();
+        recBatches++;
+        recMsg += batchMessage.getMessages().size();
         System.out.println(color + self().path().name() + "(" + stagePos + ") received batch: " + batchMessage);
+
         for(Message message : batchMessage.getMessages()) {
             batchQueue.add(message);
 
@@ -49,12 +60,16 @@ public class SplitWorker extends Worker {
                 for(int i=0; i < downstream.get(0).size(); i++) {
                     final int receiver = Math.abs(batchQueue.get(0).getKey().hashCode()) % downstream.size();
                     downstream.get(receiver).get(i).tell(new BatchMessage(batchQueue), self());
+                    sentBatches++;
+                    sentMsg += batchSize;
                 }
 
                 // Empty queue
                 batchQueue.clear();
             }
         }
+
+        processingBatchTime = avgProcBatchTime(System.nanoTime() - startTime);
     }
 
     public static Props props(String color, int stagePos, List<List<ActorRef>> downstream, final int batchSize) {
