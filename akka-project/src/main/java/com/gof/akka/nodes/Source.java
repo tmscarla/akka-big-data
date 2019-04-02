@@ -1,4 +1,4 @@
-package com.gof.akka;
+package com.gof.akka.nodes;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
@@ -16,6 +16,8 @@ import com.gof.akka.messages.BatchMessage;
 import com.gof.akka.messages.Message;
 import com.gof.akka.messages.create.SourceMsg;
 import com.gof.akka.messages.source.*;
+import com.gof.akka.messages.stats.RequestStatsMsg;
+import com.gof.akka.messages.stats.StatsMsg;
 import com.gof.akka.utils.ConsoleColors;
 
 public class Source  extends AbstractActor {
@@ -56,6 +58,7 @@ public class Source  extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder() //
+                .match(RequestStatsMsg.class, this::onRequestStatsMsg) //
                 .match(ChangeModeSourceMsg.class, this::changeMode) //
                 .match(SourceMsg.class, this::setDownstream) //
                 .match(SuspendSourceMsg.class, this::suspendSource) //
@@ -90,6 +93,18 @@ public class Source  extends AbstractActor {
     }
 
     private void stopSource(StopSourceMsg message) { running = false; }
+
+    // Send statistics to collector
+    protected void onRequestStatsMsg(RequestStatsMsg message) {
+        try {
+            StatsMsg result = new StatsMsg(self().path().name(), 0, 0, total,
+                    0, totalBatches, 0, 0);
+            getSender().tell(result, getSelf());
+        } catch (Exception e) {
+            getSender().tell(new akka.actor.Status.Failure(e), getSelf());
+            throw e;
+        }
+    }
 
     // Start sending randomly generated messages
     private void onRandomMsg(RandSourceMsg message) {
@@ -188,7 +203,7 @@ public class Source  extends AbstractActor {
 
     /* PROPS */
 
-    static final Props props() {
+    public static final Props props() {
         return Props.create(Source.class);
     }
 

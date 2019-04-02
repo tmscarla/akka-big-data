@@ -63,7 +63,7 @@ public class Job implements Serializable {
                     (AggregateFunction & Serializable) (String k, List<String> vs) -> {
                         String res = "";
                         for(String v : vs) {
-                            res = res.concat(v.substring(0, 3));
+                            res = res.concat(v.substring(0, 1));
                         }
                         return new Message(k, res);
                     }, 3, 2),

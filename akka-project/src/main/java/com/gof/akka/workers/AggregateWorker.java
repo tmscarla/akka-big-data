@@ -31,14 +31,6 @@ public class AggregateWorker extends Worker {
     }
 
     @Override
-    public Receive createReceive() {
-        return receiveBuilder() //
-                .match(Message.class, this::onMessage) //
-                .match(BatchMessage.class, this::onBatchMessage) //
-                .build();
-    }
-
-    @Override
     protected final void onMessage(Message message) {
         long startTime = System.nanoTime();
         singleRecMsg++;
@@ -67,6 +59,8 @@ public class AggregateWorker extends Worker {
             // Slide window
             windows.put(key.hashCode(), winValues.subList(windowSlide, winValues.size()));
         }
+
+        processingTime = avgProcTime(System.nanoTime() - startTime);
     }
 
 

@@ -6,6 +6,7 @@ import akka.actor.ActorSystem;
 import akka.actor.Terminated;
 import akka.http.javadsl.server.HttpApp;
 import akka.http.javadsl.server.Route;
+import akka.pattern.Patterns;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -14,11 +15,17 @@ import static akka.http.javadsl.server.Directives.route;
 import akka.http.javadsl.marshallers.jackson.Jackson;
 
 import com.gof.akka.messages.source.*;
+import com.gof.akka.messages.stats.GetWorkersMsg;
+import com.gof.akka.messages.stats.RequestStatsMsg;
+import com.gof.akka.messages.stats.StatsMsg;
 import com.gof.akka.utils.ConsoleColors;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
+import sun.misc.Request;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -46,15 +53,15 @@ class HttpServer extends HttpApp {
 
     /* UTILS */
 
-    private ActorRef getSourceFromSystem(ActorSystem system) {
+    private ActorRef getActorFromSystem(ActorSystem system, String actor) {
         try {
-            ActorSelection source = system.actorSelection("/user/source");
-            Future<ActorRef> future = source.resolveOne(new FiniteDuration(10, TimeUnit.SECONDS));
-            ActorRef sourceRef = Await.result(future, new FiniteDuration(10, TimeUnit.SECONDS));
-            return sourceRef;
+            ActorSelection actorSelection = system.actorSelection("/user/" + actor);
+            Future<ActorRef> future = actorSelection.resolveOne(new FiniteDuration(10, TimeUnit.SECONDS));
+            ActorRef actorRef = Await.result(future, new FiniteDuration(10, TimeUnit.SECONDS));
+            return actorRef;
 
         } catch (Exception e) {
-            System.out.println("Exception looking up source!");
+            System.out.println("Exception looking up actor!");
             return null;
         }
     }
@@ -78,7 +85,7 @@ class HttpServer extends HttpApp {
                         // RESUME
                         path("resume", () -> get(() -> {
                             try {
-                                ActorRef sourceRef = getSourceFromSystem(system);
+                                ActorRef sourceRef = getActorFromSystem(system, "source");
                                 sourceRef.tell(new ResumeSourceMsg(), ActorRef.noSender());
                                 return complete("Source resumed!\n");
                             } catch (Exception e) {
@@ -89,7 +96,7 @@ class HttpServer extends HttpApp {
                         // SUSPEND
                         path("suspend", () -> get(() -> {
                             try {
-                                ActorRef sourceRef = getSourceFromSystem(system);
+                                ActorRef sourceRef = getActorFromSystem(system, "source");
                                 sourceRef.tell(new SuspendSourceMsg(), ActorRef.noSender());
                                 return complete("Source suspended!\n");
                             } catch (Exception e) {
@@ -101,7 +108,7 @@ class HttpServer extends HttpApp {
                         path("mode", () -> post(() ->  entity(
                             Jackson.unmarshaller(SourceMode.class), mode -> {
                                 try {
-                                    ActorRef sourceRef = getSourceFromSystem(system);
+                                    ActorRef sourceRef = getActorFromSystem(system, "source");
                                     if(mode.getMode().equals("batch")) {
                                         sourceRef.tell(new ChangeModeSourceMsg(true), ActorRef.noSender());
                                         return complete("Source switched to batch mode!\n");
@@ -119,7 +126,7 @@ class HttpServer extends HttpApp {
                                 Jackson.unmarshaller(RandomSource.class), randomSource -> {
                                     try {
                                         // Stop source thread
-                                        ActorRef sourceRef = getSourceFromSystem(system);
+                                        ActorRef sourceRef = getActorFromSystem(system, "source");
                                         sourceRef.tell(new StopSourceMsg(), ActorRef.noSender());
                                         Thread.sleep(2000);
 
@@ -141,7 +148,7 @@ class HttpServer extends HttpApp {
                                 Jackson.unmarshaller(ReadSource.class), readSource -> {
                                     try {
                                         // Stop source thread
-                                        ActorRef sourceRef = getSourceFromSystem(system);
+                                        ActorRef sourceRef = getActorFromSystem(system, "source");
                                         sourceRef.tell(new StopSourceMsg(), ActorRef.noSender());
                                         Thread.sleep(2000);
 
@@ -164,7 +171,7 @@ class HttpServer extends HttpApp {
                                         System.out.println(ConsoleColors.RESET + "Stopping previous job...");
 
                                         // Stop source thread
-                                        ActorRef sourceRef = getSourceFromSystem(system);
+                                        ActorRef sourceRef = getActorFromSystem(system, "source");
                                         sourceRef.tell(new StopSourceMsg(), ActorRef.noSender());
                                         Thread.sleep(2000);
 
@@ -198,9 +205,34 @@ class HttpServer extends HttpApp {
                         // STATS
                         path("stats", () -> get(() -> {
                             try {
-                                return complete("Stats!\n");
+                                try {
+                                    ActorRef collector = getActorFromSystem(system, "collector");
+                                    ActorRef master = getActorFromSystem(system, "master");
+                                    ActorRef source = getActorFromSystem(system, "source");
+                                    ActorRef sink = getActorFromSystem(system, "sink");
+
+
+                                    // Get workers
+                                    final Future<Object> getWorkers = Patterns.ask(master, new GetWorkersMsg(), 1000);
+                                    List<ActorRef> workers = ((GetWorkersMsg) Await.result(getWorkers, Duration.Inf()))
+                                                                .getWorkers();
+
+                                    // Ask collector to gather stats of workers
+                                    final Future<Object> reply = Patterns.ask(collector,
+                                            new RequestStatsMsg(source, sink, workers), 10000);
+                                    RequestStatsMsg replyMsg = (RequestStatsMsg) Await.result(reply, Duration.Inf());
+
+                                    // Display result
+                                    String result = replyMsg.getResult();
+                                    return complete(result);
+
+                                } catch (final Exception e) {
+                                    e.printStackTrace();
+                                    return complete("Exception while gathering statistics!");
+                                }
                             } catch (Exception e) {
-                                return complete("Exception!");
+                                e.printStackTrace();
+                                return complete("Exception while gathering statistics!");
                             }
                         })))
                 );

@@ -22,14 +22,6 @@ public class SplitWorker extends Worker {
     }
 
     @Override
-    public Receive createReceive() {
-        return ReceiveBuilder.create() //
-                .match(Message.class, this::onMessage)
-                .match(BatchMessage.class, this::onBatchMessage)
-                .build();
-    }
-
-    @Override
     public void onMessage(Message message) {
         long startTime = System.nanoTime();
         singleRecMsg++;

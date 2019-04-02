@@ -4,6 +4,8 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import com.gof.akka.messages.BatchMessage;
 import com.gof.akka.messages.Message;
+import com.gof.akka.messages.stats.RequestStatsMsg;
+import com.gof.akka.messages.stats.StatsMsg;
 import com.gof.akka.utils.ConsoleColors;
 
 import java.util.ArrayList;
@@ -47,6 +49,26 @@ public abstract class Worker extends AbstractActor {
             return time;
         } else {
             return ((processingBatchTime * (recBatches-1)) + time) / recBatches;
+        }
+    }
+
+    @Override
+    public Receive createReceive() {
+        return receiveBuilder() //
+                .match(Message.class, this::onMessage) //
+                .match(BatchMessage.class, this::onBatchMessage) //
+                .match(RequestStatsMsg.class, this::onRequestStatsMsg) //
+                .build();
+    }
+
+    protected void onRequestStatsMsg(RequestStatsMsg message) {
+        try {
+            StatsMsg result = new StatsMsg(self().path().name(), stagePos, recMsg, sentMsg,
+                    recBatches, sentBatches, processingTime, processingBatchTime);
+            getSender().tell(result, getSelf());
+        } catch (Exception e) {
+            getSender().tell(new akka.actor.Status.Failure(e), getSelf());
+            throw e;
         }
     }
 

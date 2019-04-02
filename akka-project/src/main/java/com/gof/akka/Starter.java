@@ -6,21 +6,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import akka.actor.*;
 
-import akka.util.Timeout;
 import com.gof.akka.messages.create.*;
-import com.gof.akka.messages.source.*;
+import com.gof.akka.nodes.Collector;
+import com.gof.akka.nodes.Master;
+import com.gof.akka.nodes.Sink;
+import com.gof.akka.nodes.Source;
 import com.gof.akka.operators.*;
 import com.gof.akka.utils.ConsoleColors;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import org.omg.CORBA.TIMEOUT;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
 
 
 public class Starter {
@@ -208,10 +205,15 @@ public class Starter {
 
         /* SOURCE */
 
-        // Source
         final ActorRef source = sys.actorOf(Source.props(), "source");
         master.tell(new SourceMsg(source), source);
         System.out.println(ConsoleColors.RESET + "Source created!");
+
+        /* COLLECTOR */
+
+        final ActorRef collector = sys.actorOf(Collector.props(), "collector");
+        System.out.println(ConsoleColors.RESET + "Collector created!");
+
         /*Thread.sleep(2000);
         source.tell(new ChangeModeSourceMsg(false), ActorRef.noSender());
         Thread.sleep(2000);

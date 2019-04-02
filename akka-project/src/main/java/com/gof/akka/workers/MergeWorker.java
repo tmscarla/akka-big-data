@@ -16,14 +16,6 @@ public class MergeWorker extends Worker {
     }
 
     @Override
-    public Receive createReceive() {
-        return ReceiveBuilder.create() //
-                .match(Message.class, this::onMessage)
-                .match(BatchMessage.class, this::onBatchMessage)
-                .build();
-    }
-
-    @Override
     protected void onMessage(Message message) {
         long startTime = System.nanoTime();
         singleRecMsg++;
@@ -35,7 +27,7 @@ public class MergeWorker extends Worker {
         downstream.get(receiver).tell(message, self());
         sentMsg++;
 
-        processingTime = avgProcTime(System.nanoTime() - startTime);
+        processingTime = avgProcTime((System.nanoTime() - startTime) / 1000);
     }
 
     @Override
@@ -61,7 +53,7 @@ public class MergeWorker extends Worker {
             }
         }
 
-        processingBatchTime = avgProcBatchTime(System.nanoTime() - startTime);
+        processingBatchTime = avgProcBatchTime((System.nanoTime() - startTime) / 1000);
     }
 
     public static Props props(String color, int stagePos, List<ActorRef> downstream, final int batchSize) {

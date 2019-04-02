@@ -17,14 +17,6 @@ public class FilterWorker extends Worker {
     }
 
     @Override
-    public Receive createReceive() {
-        return receiveBuilder() //
-                .match(Message.class, this::onMessage) //
-                .match(BatchMessage.class, this::onBatchMessage) //
-                .build();
-    }
-
-    @Override
     protected final void onMessage(Message message) {
         long startTime = System.nanoTime();
         singleRecMsg++;

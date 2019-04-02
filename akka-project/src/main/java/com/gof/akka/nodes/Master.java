@@ -1,4 +1,4 @@
-package com.gof.akka;
+package com.gof.akka.nodes;
 
 import akka.actor.*;
 import akka.dispatch.PriorityGenerator;
@@ -6,20 +6,14 @@ import akka.dispatch.UnboundedStablePriorityMailbox;
 import akka.japi.pf.DeciderBuilder;
 import akka.remote.RemoteScope;
 
-import com.gof.akka.functions.AggregateFunction;
-import com.gof.akka.messages.Message;
 import com.gof.akka.messages.create.*;
-import com.gof.akka.functions.FilterFunction;
-import com.gof.akka.functions.MapFunction;
-import com.gof.akka.functions.FlatMapFunction;
+import com.gof.akka.messages.stats.GetWorkersMsg;
 import com.gof.akka.workers.*;
-import com.sun.org.apache.bcel.internal.generic.ACONST_NULL;
 import scala.concurrent.duration.Duration;
 import com.typesafe.config.Config;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class Master extends AbstractActor {
 
@@ -49,7 +43,7 @@ public class Master extends AbstractActor {
     private int numMachines = 1;
     private int currentMachine = 0;
 
-    public int count = 0;
+    private List<ActorRef> children;
 
     // OneForOneStrategy: the strategy applies only to the crashed child
     // OneForAllStrategy: the strategy applies to all children
@@ -74,6 +68,7 @@ public class Master extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder() //
+                .match(GetWorkersMsg.class, this::onGetWorkersMsg) //
                 .match(ChangeStageMsg.class, this::onChangeStage) //
                 .match(SourceMsg.class, this::onReceiveSource) //
                 .match(SinkMsg.class, this::onReceiveSink) //
@@ -108,6 +103,20 @@ public class Master extends AbstractActor {
 
     private void onReceiveSource(SourceMsg sourceMsg) {
         sender().tell(new SourceMsg(oldStage), self());
+
+        // Update children workers
+        children = new ArrayList<>();
+        for (ActorRef a : getContext().getChildren())
+            children.add(a);
+    }
+
+    private void onGetWorkersMsg(GetWorkersMsg message) {
+        try {
+            getSender().tell(new GetWorkersMsg(children), getSelf());
+        } catch (Exception e) {
+            getSender().tell(new akka.actor.Status.Failure(e), getSelf());
+            throw e;
+        }
     }
 
     private void onCreateMapMsg(CreateMapMsg mapMsg) {

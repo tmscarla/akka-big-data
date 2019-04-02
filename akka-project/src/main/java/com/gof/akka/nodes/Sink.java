@@ -1,4 +1,4 @@
-package com.gof.akka;
+package com.gof.akka.nodes;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -9,9 +9,9 @@ import akka.actor.Props;
 
 import com.gof.akka.messages.BatchMessage;
 import com.gof.akka.messages.Message;
+import com.gof.akka.messages.stats.RequestStatsMsg;
+import com.gof.akka.messages.stats.StatsMsg;
 import com.gof.akka.utils.ConsoleColors;
-
-import javax.swing.plaf.basic.BasicTabbedPaneUI;
 
 public class Sink extends AbstractActor {
     private String filePath;
@@ -30,9 +30,21 @@ public class Sink extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder() //
+                .match(RequestStatsMsg.class, this::onRequestStatsMsg) //
                 .match(Message.class, this::onMessage) //
                 .match(BatchMessage.class, this::onBatchMessage) //
                 .build();
+    }
+
+    protected void onRequestStatsMsg(RequestStatsMsg message) {
+        try {
+            StatsMsg result = new StatsMsg(self().path().name(), 0, total, 0,
+                    totalBatches, 0, 0, 0);
+            getSender().tell(result, getSelf());
+        } catch (Exception e) {
+            getSender().tell(new akka.actor.Status.Failure(e), getSelf());
+            throw e;
+        }
     }
 
     private final void onMessage(Message message) {
@@ -77,7 +89,7 @@ public class Sink extends AbstractActor {
         }
     }
 
-    static final Props props() {
+    public static final Props props() {
         return Props.create(Sink.class);
     }
 }
