@@ -1,0 +1,27 @@
+=== REST API EXAMPLES ===
+
+
+# RANDOM SOURCE
+curl -d '{"keySize":"10", "valueSize":"50"}' -H "Content-Type: application/json" -X POST http://localhost:8080/source/random
+
+
+# READ FROM CSV
+curl -d '{"filePath":"/Users/tommasoscarlatti/Desktop/PoliMi/akka-bigdata/akka-project/data/prova.csv"}' -H "Content-Type: application/json" -X POST http://localhost:8080/source/read
+
+
+# JOB
+curl -d '{"id":"2"}' -H "Content-Type: application/json" -X POST http://localhost:8080/source/job
+
+
+# MODE
+curl -d '{"mode":"batch"}' -H "Content-Type: application/json" -X POST http://localhost:8080/source/mode
+curl -d '{"mode":"stream"}' -H "Content-Type: application/json" -X POST http://localhost:8080/source/mode
+
+
+# SUSPEND/RESUME
+curl -X GET http://localhost:8080/source/suspend
+curl -X GET http://localhost:8080/source/resume
+
+
+# STATS
+curl -X GET http://localhost:8080/stats

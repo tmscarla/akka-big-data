@@ -45,6 +45,7 @@ public class MapWorker extends Worker {
             // Send result to downstream worker
             final int receiver = Math.abs(result.getKey().hashCode()) % downstream.size();
             downstream.get(receiver).tell(result, self());
+            sentMsg++;
         }
 
         processingTime = avgProcTime(System.nanoTime() - startTime);

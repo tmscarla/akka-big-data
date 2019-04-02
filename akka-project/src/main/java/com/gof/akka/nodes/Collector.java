@@ -49,7 +49,7 @@ public class Collector extends AbstractActor {
         try {
             final Future<Object> sourceReply = Patterns.ask(message.getSource(), message, 10000);
             sourceStats = (StatsMsg) Await.result(sourceReply, Duration.Inf());
-            final Future<Object> sinkReply = Patterns.ask(message.getSource(), message, 10000);
+            final Future<Object> sinkReply = Patterns.ask(message.getSink(), message, 10000);
             sinkStats = (StatsMsg) Await.result(sinkReply, Duration.Inf());
         } catch (Exception e) {
             e.printStackTrace();
@@ -80,17 +80,17 @@ public class Collector extends AbstractActor {
         }
 
         // Convert result in a string format
-        String res = "#===== SYSTEM STATS | " + lastDate.toString() + "=====#\n\n";
+        String res = "\n\n#===== SYSTEM STATS | " + lastDate + "=====#\n\n";
 
         // Legend
         res = res.concat("Worker: (sent/rec) | (sentBatch/recBatch) | [avgTime|avgBatchTime]\n\n\n");
 
         // Source
-        res = res.concat(String.format("== SOURCE ==\n\nSent:%d\nSent batches:%d\n\n",
+        res = res.concat(String.format("== SOURCE ==\n\nMessages: %d\nBatches: %d\n\n",
                 sourceStats.getSentMsg(), sourceStats.getSentBatches()));
 
         // Sink
-        res = res.concat(String.format("== SOURCE ==\n\nReceived:%d \nReceived batches:%d\n\n",
+        res = res.concat(String.format("== SINK ==\n\nMessages: %d \nBatches: %d\n\n",
                 sinkStats.getRecMsg(), sinkStats.getRecBatches()));
 
         // Workers
