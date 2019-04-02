@@ -18,17 +18,41 @@ import java.util.concurrent.TimeUnit;
 
 public class Collaborator {
     public static void main( String[] args ) throws InterruptedException, IOException {
-        String configPath = "conf/collaborator1.conf";
-        collaboratorNode(configPath);
+
+        // If address ip:port is passed as a command line argument
+        if (args.length > 0) {
+            String[] addr = args[0].split(":");
+            String ip = addr[0];
+            String port = addr[1];
+
+            // Load standard configuration
+            final Config nodeConf = ConfigFactory.parseFile(new File("conf/node.conf"));
+
+            // Configure collaborator
+            Config collab = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port +"\n"
+                    + "akka.remote.netty.tcp.hostname=" + ip);
+
+            // Merge configurations
+            Config combined = collab.withFallback(nodeConf);
+            Config complete = ConfigFactory.load(combined);
+            collaboratorNode(complete);
+        }
+
+        // Otherwise load defaults
+        else {
+            String configPath = "conf/collaborator1.conf";
+            Config collabConfig = ConfigFactory.parseFile(new File(configPath));
+            collaboratorNode(collabConfig);
+        }
+
     }
 
-    public static final void collaboratorNode(String configPath) {
+    public static final void collaboratorNode(Config collabConfig) {
+
         /* INITIALIZATION */
 
-        // Define system with configuration loaded from configPath
-        final Config conf = ConfigFactory.parseFile(new File(configPath));
-        final ActorSystem sys = ActorSystem.create("sys", conf);
-        System.out.println( "System created on collaborator node 1!" );
+        final ActorSystem sys = ActorSystem.create("sys", collabConfig);
+        System.out.println( "System created on collaborator node!");
 
     }
 

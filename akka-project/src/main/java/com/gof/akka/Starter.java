@@ -90,9 +90,23 @@ public class Starter {
 
         /* SYSTEM AND MAIN NODES */
 
-        // System, where actors actually live
-        final Config conf = ConfigFactory.parseFile(new File("conf/starter.conf"));
-        final ActorSystem sys = ActorSystem.create("sys", conf);
+        // Set configuration programmatically
+        final Config nodeConf = ConfigFactory.parseFile(new File("conf/node.conf"));
+
+        String[] addr = starterNodeURI.split("@")[1].split(":");
+        String ip = addr[0];
+        String port = addr[1];
+
+        Config starter = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port +"\n"
+                                                    + "akka.remote.netty.tcp.hostname=" + ip);
+        Config combined = starter.withFallback(nodeConf);
+        Config complete = ConfigFactory.load(combined);
+
+        // System: where actors actually live
+        final ActorSystem sys = ActorSystem.create("sys", complete);
+
+        // final Config conf = ConfigFactory.parseFile(new File("conf/starter.conf"));
+
         System.out.println(ConsoleColors.RESET + "System created on starter node!" );
 
         // Sink
@@ -214,14 +228,7 @@ public class Starter {
         final ActorRef collector = sys.actorOf(Collector.props(), "collector");
         System.out.println(ConsoleColors.RESET + "Collector created!");
 
-        /*Thread.sleep(2000);
-        source.tell(new ChangeModeSourceMsg(false), ActorRef.noSender());
-        Thread.sleep(2000);
-        source.tell(new RandSourceMsg(100, 500), ActorRef.noSender());
-        Thread.sleep(2000);*/
-
         return sys;
-
     }
 
     private static final List<ActorRef> createSink(final ActorSystem sys) {

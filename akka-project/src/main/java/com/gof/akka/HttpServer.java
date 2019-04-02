@@ -4,26 +4,21 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
 import akka.actor.ActorSystem;
 import akka.actor.Terminated;
+import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.server.HttpApp;
 import akka.http.javadsl.server.Route;
 import akka.pattern.Patterns;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import static akka.http.javadsl.server.Directives.route;
-
-import akka.http.javadsl.marshallers.jackson.Jackson;
-
 import com.gof.akka.messages.source.*;
 import com.gof.akka.messages.stats.GetWorkersMsg;
 import com.gof.akka.messages.stats.RequestStatsMsg;
-import com.gof.akka.messages.stats.StatsMsg;
 import com.gof.akka.utils.ConsoleColors;
+import org.apache.commons.cli.*;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
-import sun.misc.Request;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,19 +30,58 @@ import java.util.concurrent.TimeUnit;
 class HttpServer extends HttpApp {
     // Actor System on the starter node
     private static ActorSystem system;
+    // Static configuration
     private static String starterNodeURI = "akka.tcp://sys@127.0.0.1:6000";
     private static List<String> collaboratorNodesURI = Arrays.asList("akka.tcp://sys@127.0.0.1:6120",
                                                                      "akka.tcp://sys@127.0.0.1:6121");
 
     public static void main(String[] args) throws InterruptedException, ExecutionException {
-        // Starting the system
+        Options options = new Options();
+
+        Option input = new Option("s", "starter", true, "ip:port of starter node");
+        input.setRequired(false);
+        options.addOption(input);
+
+        Option output = new Option("c", "collabs", true, "ip1:port1,ip2:port2,..." +
+                " list of collaborator nodes separated by a comma");
+        output.setRequired(false);
+        options.addOption(output);
+
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine cmd = null;
+
+        try {
+            cmd = parser.parse(options, args);
+        } catch (ParseException e) {
+            System.out.println(e.getMessage());
+            formatter.printHelp("utility-name", options);
+            System.exit(1);
+        }
+
+        String starterNode = cmd.getOptionValue("starter");
+        String starterIP = "localhost";
+
+        // Override default parameters if cmd arguments are passed
+        if(starterNode != null) {
+            starterIP = starterNode.split(":")[0];
+            List<String> collabsNodes = Arrays.asList(cmd.getOptionValue("collabs").split(","));
+
+            starterNodeURI = "akka.tcp://sys@".concat(starterNode);
+            collaboratorNodesURI = new ArrayList<>();
+            for(String c : collabsNodes) {
+                collaboratorNodesURI.add("akka.tcp://sys@".concat(c));
+            }
+        }
+
+        // Starting the system (with jobOne by default)
         System.out.println(ConsoleColors.RESET + "Starting the system...");
-        system = Starter.starterNode(starterNodeURI, collaboratorNodesURI, Job.jobTwo.getOperators());
+        system = Starter.starterNode(starterNodeURI, collaboratorNodesURI, Job.jobOne.getOperators());
 
         // Starting the server
-        System.out.println(ConsoleColors.RESET + "Server online at http://localhost:8080/");
+        System.out.println(ConsoleColors.RESET + String.format("Server online at http://%s:8080/", starterIP));
         final HttpServer myHttpServer = new HttpServer();
-        myHttpServer.startServer("localhost", 8080);
+        myHttpServer.startServer(starterIP, 8080);
 
     }
 
