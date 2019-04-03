@@ -26,7 +26,11 @@ public class FlatMapWorker extends Worker {
         recMsg++;
 
         System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
-        // Perform Map on received message
+
+        // Simulate crash
+        simulateCrash(100);
+
+        // Perform FlatMap on received message
         final List<Message> result = fun.process(message.getKey(), message.getVal());
 
         // Send result messages to downstream workers
@@ -45,6 +49,9 @@ public class FlatMapWorker extends Worker {
         recBatches++;
         recMsg += batchMessage.getMessages().size();
         System.out.println(color + self().path().name() + "(" + stagePos + ") received batch: " + batchMessage);
+
+        // Simulate crash
+        simulateCrash(100);
 
         // Perform FlatMap on each received message of the batch and add result to batchQueue
         for(Message message : batchMessage.getMessages()) {

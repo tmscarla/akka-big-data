@@ -23,6 +23,9 @@ public class FilterWorker extends Worker {
         recMsg++;
         System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
 
+        // Simulate crash
+        simulateCrash(100);
+
         // Evaluate filter predicate
         final Boolean predicateResult = fun.predicate(message.getKey(), message.getVal());
 
@@ -42,6 +45,9 @@ public class FilterWorker extends Worker {
         recBatches++;
         recMsg += batchMessage.getMessages().size();
         System.out.println(color + self().path().name() + "(" + stagePos + ") received batch: " + batchMessage);
+
+        // Simulate crash
+        simulateCrash(100);
 
         // Evaluate predicate on each received message of the batch and add result to batchQueue
         for(Message message : batchMessage.getMessages()) {

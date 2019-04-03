@@ -37,6 +37,9 @@ public class AggregateWorker extends Worker {
         recMsg++;
         System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
 
+        // Simulate crash
+        simulateCrash(50);
+
         // Get key and value of the message
         final String key = message.getKey();
         final String value = message.getVal();
@@ -70,6 +73,9 @@ public class AggregateWorker extends Worker {
         recBatches++;
         recMsg += batchMessage.getMessages().size();
         System.out.println(color + self().path().name() + "(" + stagePos + ") received batch: " + batchMessage);
+
+        // Simulate crash
+        simulateCrash(200);
 
         // For each message in the batch
         for(Message message : batchMessage.getMessages()) {

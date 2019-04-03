@@ -195,8 +195,12 @@ class HttpServer extends HttpApp {
                                     } catch (Exception e) {
                                         return complete("Exception on initialize csv source!");
                                     }
-                                }))),
+                                }))))
 
+
+                        ),
+
+                        concat(
 
                         // JOBS
                         path("job", () -> post(() -> entity(
@@ -232,9 +236,7 @@ class HttpServer extends HttpApp {
                                         return complete("Exception while submitting new job.");
                                     }
                                 }))
-                        ))),
-
-                        concat(
+                        ),
 
                         // STATS
                         path("stats", () -> get(() -> {

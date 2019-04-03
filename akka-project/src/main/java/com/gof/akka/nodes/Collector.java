@@ -11,18 +11,17 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Collector extends AbstractActor {
     private String result;
-    private SimpleDateFormat lastDate;
     private Map<Integer, List<StatsMsg>> globalStats;
     private StatsMsg sourceStats;
     private StatsMsg sinkStats;
     private Integer maxStage = 0;
+
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yy HH:mm:ss.SSS");
+    private Date lastDate;
 
     public Collector() {
     }
@@ -43,7 +42,7 @@ public class Collector extends AbstractActor {
         globalStats = new HashMap<>();
 
         // Update date
-        lastDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+        lastDate = new Date();
 
         // Source and sink stats
         try {
@@ -80,10 +79,10 @@ public class Collector extends AbstractActor {
         }
 
         // Convert result in a string format
-        String res = "\n\n#===== SYSTEM STATS | " + lastDate + "=====#\n\n";
+        String res = "\n\n#===== SYSTEM STATS | " + dateFormat.format(lastDate) + "=====#\n\n";
 
         // Legend
-        res = res.concat("Worker: (sent/rec) | (sentBatch/recBatch) | [avgTime|avgBatchTime]\n\n\n");
+        res = res.concat("Worker: (sent/rec) | (sentBatch/recBatch) | (avgTime/avgBatchTime)\n\n\n");
 
         // Source
         res = res.concat(String.format("== SOURCE ==\n\nMessages: %d\nBatches: %d\n\n",
@@ -98,7 +97,7 @@ public class Collector extends AbstractActor {
             res = res.concat(String.format("== STAGE %d ==\n\n", i));
 
             for(StatsMsg msg : globalStats.get(i)) {
-                res = res.concat(String.format("%s: (%d/%d) | (%d/%d) | [%f|%f]\n", msg.getName(), msg.getSentMsg(),
+                res = res.concat(String.format("%s: (%d/%d) | (%d/%d) | (%.3f/%.3f)\n", msg.getName(), msg.getSentMsg(),
                         msg.getRecMsg(), msg.getSentBatches(), msg.getRecBatches(),
                         (float)msg.getProcessingTime()/1000000, (float)msg.getProcessingBatchTime()/1000000));
             }

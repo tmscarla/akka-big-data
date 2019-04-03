@@ -28,6 +28,9 @@ public class SplitWorker extends Worker {
         recMsg++;
         System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
 
+        // Simulate crash
+        simulateCrash(100);
+
         // For each operator forward message to the right worker
         for(int i=0; i < downstream.get(0).size(); i++) {
             final int receiver = Math.abs(message.getKey().hashCode()) % downstream.size();
@@ -44,6 +47,9 @@ public class SplitWorker extends Worker {
         recBatches++;
         recMsg += batchMessage.getMessages().size();
         System.out.println(color + self().path().name() + "(" + stagePos + ") received batch: " + batchMessage);
+
+        // Simulate crash
+        simulateCrash(100);
 
         for(Message message : batchMessage.getMessages()) {
             batchQueue.add(message);

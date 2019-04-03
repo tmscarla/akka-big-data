@@ -73,6 +73,12 @@ public abstract class Worker extends AbstractActor {
         }
     }
 
+    protected void simulateCrash(int numMessages) {
+        if (recMsg % numMessages == 0) {
+            throw new RuntimeException(color + self().path().name() + " Crashed!");
+        }
+    }
+
     @Override
     public void preRestart(Throwable reason, Optional<Object> message) throws Exception {
         super.preRestart(reason, message);
@@ -96,6 +102,7 @@ public abstract class Worker extends AbstractActor {
         }
 
     }
+
 
     protected abstract void onMessage(Message message);
 

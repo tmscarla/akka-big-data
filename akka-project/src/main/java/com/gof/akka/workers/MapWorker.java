@@ -26,20 +26,19 @@ public class MapWorker extends Worker {
         long startTime = System.nanoTime();
         singleRecMsg++;
         recMsg++;
+        System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
 
-        if (recMsg % 10 == 0) {
-            System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
-            throw new RuntimeException(color + self().path().name() + " Crashed!");
-        } else {
-            System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
-            // Perform Map on received message
-            final Message result = fun.process(message.getKey(), message.getVal());
+        // Simulate crash
+        simulateCrash(100);
 
-            // Send result to downstream worker
-            final int receiver = Math.abs(result.getKey().hashCode()) % downstream.size();
-            downstream.get(receiver).tell(result, self());
-            sentMsg++;
-        }
+        // Perform Map on received message
+        final Message result = fun.process(message.getKey(), message.getVal());
+
+        // Send result to downstream worker
+        final int receiver = Math.abs(result.getKey().hashCode()) % downstream.size();
+        downstream.get(receiver).tell(result, self());
+        sentMsg++;
+
 
         processingTime = avgProcTime(System.nanoTime() - startTime);
     }
@@ -50,6 +49,9 @@ public class MapWorker extends Worker {
         recBatches++;
         recMsg += batchMessage.getMessages().size();
         System.out.println(color + self().path().name() + "(" + stagePos + ") received batch: " + batchMessage);
+
+        // Simulate crash
+        simulateCrash(100);
 
         // Perform Map on each received message of the batch and add result to batchQueue
         for(Message message : batchMessage.getMessages()) {

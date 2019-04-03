@@ -22,6 +22,9 @@ public class MergeWorker extends Worker {
         recMsg++;
         System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
 
+        // Simulate crash
+        simulateCrash(100);
+
         // Send result to downstream worker
         final int receiver = Math.abs(message.getKey().hashCode()) % downstream.size();
         downstream.get(receiver).tell(message, self());
@@ -36,6 +39,9 @@ public class MergeWorker extends Worker {
         recBatches++;
         recMsg += batchMessage.getMessages().size();
         System.out.println(color + self().path().name() + "(" + stagePos + ") received batch: " + batchMessage);
+
+        // Simulate crash
+        simulateCrash(100);
 
         // Accumulate messages
         for(Message message : batchMessage.getMessages()) {
