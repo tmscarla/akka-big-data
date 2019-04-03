@@ -15,3 +15,8 @@ The platform has been developed both for scaling up (on multiple processors) and
 
 ## Structure
 
+
+## Collaborators
+
+- [Matteo Moreschini](https://github.com/teomores)
+- [Alessio Russo Introito](https://github.com/russointroitoa)
