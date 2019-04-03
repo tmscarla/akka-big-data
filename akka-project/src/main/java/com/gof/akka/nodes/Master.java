@@ -17,21 +17,6 @@ import java.util.List;
 
 public class Master extends AbstractActor {
 
-    static class RecoverMailbox extends UnboundedStablePriorityMailbox {
-        public RecoverMailbox(ActorSystem.Settings settings, Config config) {
-            // Create a new PriorityGenerator, lower priority means more important
-            super(
-                    new PriorityGenerator() {
-                        @Override
-                        public int gen(Object message) {
-                            if (message.equals("recovered"))
-                                return 0; // recovered messages should be put at the end of the queue
-                            else return 1; // default are FIFO
-                        }
-                    });
-        }
-    }
-
     // Stage for split operator
     private List<List<ActorRef>> parallelStage = new ArrayList<>();
 
@@ -119,6 +104,8 @@ public class Master extends AbstractActor {
         }
     }
 
+    /* CREATE WORKERS */
+
     private void onCreateMapMsg(CreateMapMsg mapMsg) {
         ActorRef mapWorker;
 
@@ -128,13 +115,13 @@ public class Master extends AbstractActor {
                     mapMsg.getPosStage(),
                     stageDeepCopy(oldStage),
                     mapMsg.getBatchSize(),
-                    mapMsg.getFun()).withMailbox(""), mapMsg.getName());
+                    mapMsg.getFun()).withMailbox("recover-mailbox"), mapMsg.getName());
         } else {
             mapWorker = getContext().actorOf(MapWorker.props(mapMsg.getColor(),
                     mapMsg.getPosStage(),
                     stageDeepCopy(oldStage),
                     mapMsg.getBatchSize(),
-                    mapMsg.getFun())
+                    mapMsg.getFun()).withMailbox("recover-mailbox")
                     .withDeploy(new Deploy(new RemoteScope(mapMsg.getAddress()))), mapMsg.getName());
         }
 
@@ -152,13 +139,13 @@ public class Master extends AbstractActor {
                     flatMapMsg.getPosStage(),
                     stageDeepCopy(oldStage),
                     flatMapMsg.getBatchSize(),
-                    flatMapMsg.getFun()), flatMapMsg.getName());
+                    flatMapMsg.getFun()).withMailbox("recover-mailbox"), flatMapMsg.getName());
         } else {
             flatMapWorker = getContext().actorOf(FlatMapWorker.props(flatMapMsg.getColor(),
                     flatMapMsg.getPosStage(),
                     stageDeepCopy(oldStage),
                     flatMapMsg.getBatchSize(),
-                    flatMapMsg.getFun())
+                    flatMapMsg.getFun()).withMailbox("recover-mailbox")
                     .withDeploy(new Deploy(new RemoteScope(flatMapMsg.getAddress()))), flatMapMsg.getName());
         }
 
@@ -177,7 +164,7 @@ public class Master extends AbstractActor {
                     aggMsg.getBatchSize(),
                     aggMsg.getFun(),
                     aggMsg.getWindowSize(),
-                    aggMsg.getWindowSlide()), aggMsg.getName());
+                    aggMsg.getWindowSlide()).withMailbox("recover-mailbox"), aggMsg.getName());
         } else {
             aggWorker = getContext().actorOf(AggregateWorker.props(aggMsg.getColor(),
                     aggMsg.getPosStage(),
@@ -185,7 +172,7 @@ public class Master extends AbstractActor {
                     aggMsg.getBatchSize(),
                     aggMsg.getFun(),
                     aggMsg.getWindowSize(),
-                    aggMsg.getWindowSlide())
+                    aggMsg.getWindowSlide()).withMailbox("recover-mailbox")
                     .withDeploy(new Deploy(new RemoteScope(aggMsg.getAddress()))), aggMsg.getName());
 
         }
@@ -203,13 +190,13 @@ public class Master extends AbstractActor {
                     filterMsg.getPosStage(),
                     stageDeepCopy(oldStage),
                     filterMsg.getBatchSize(),
-                    filterMsg.getFun()), filterMsg.getName());
+                    filterMsg.getFun()).withMailbox("recover-mailbox"), filterMsg.getName());
         } else {
             filterWorker = getContext().actorOf(FilterWorker.props(filterMsg.getColor(),
                     filterMsg.getPosStage(),
                     stageDeepCopy(oldStage),
                     filterMsg.getBatchSize(),
-                    filterMsg.getFun())
+                    filterMsg.getFun()).withMailbox("recover-mailbox")
                     .withDeploy(new Deploy(new RemoteScope(filterMsg.getAddress()))), filterMsg.getName());
         }
 
@@ -235,12 +222,12 @@ public class Master extends AbstractActor {
             splitWorker = getContext().actorOf(SplitWorker.props(splitMsg.getColor(),
                     splitMsg.getPosStage(),
                     pStage,
-                    splitMsg.getBatchSize()), splitMsg.getName());
+                    splitMsg.getBatchSize()).withMailbox("recover-mailbox"), splitMsg.getName());
         } else {
             splitWorker = getContext().actorOf(SplitWorker.props(splitMsg.getColor(),
                     splitMsg.getPosStage(),
                     pStage,
-                    splitMsg.getBatchSize())
+                    splitMsg.getBatchSize()).withMailbox("recover-mailbox")
                     .withDeploy(new Deploy(new RemoteScope(splitMsg.getAddress()))), splitMsg.getName());
         }
 
@@ -262,12 +249,12 @@ public class Master extends AbstractActor {
             mergeWorker = getContext().actorOf(MergeWorker.props(mergeMsg.getColor(),
                     mergeMsg.getPosStage(),
                     stageDeepCopy(oldStage),
-                    mergeMsg.getBatchSize()), mergeMsg.getName());
+                    mergeMsg.getBatchSize()).withMailbox("recover-mailbox"), mergeMsg.getName());
         } else {
             mergeWorker = getContext().actorOf(MergeWorker.props(mergeMsg.getColor(),
                     mergeMsg.getPosStage(),
                     stageDeepCopy(oldStage),
-                    mergeMsg.getBatchSize())
+                    mergeMsg.getBatchSize()).withMailbox("recover-mailbox")
                     .withDeploy(new Deploy(new RemoteScope(mergeMsg.getAddress()))), mergeMsg.getName());
 
         }
@@ -280,8 +267,9 @@ public class Master extends AbstractActor {
 
     }
 
+    /* STAGES MANAGER */
 
-    public void updateStage(ActorRef actorRef) {
+    private void updateStage(ActorRef actorRef) {
         if (isParallel) {
             parallelStage.get(currentMachine).add(actorRef);
             currentMachine++;
@@ -300,6 +288,8 @@ public class Master extends AbstractActor {
         }
         return newStage;
     }
+
+    /* PROPS */
 
     public static Props props(int numMachines) {
         return Props.create(Master.class, numMachines);

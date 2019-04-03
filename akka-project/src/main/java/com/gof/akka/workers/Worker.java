@@ -10,6 +10,7 @@ import com.gof.akka.utils.ConsoleColors;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public abstract class Worker extends AbstractActor {
     protected String color = ConsoleColors.WHITE;
@@ -70,6 +71,30 @@ public abstract class Worker extends AbstractActor {
             getSender().tell(new akka.actor.Status.Failure(e), getSelf());
             throw e;
         }
+    }
+
+    @Override
+    public void preRestart(Throwable reason, Optional<Object> message) throws Exception {
+        super.preRestart(reason, message);
+        System.out.println(color + "Restarting " + self().path().name() + "...");
+
+        if(message.isPresent()) {
+            Object msg = message.get();
+
+            if (msg instanceof Message) {
+                ((Message) msg).setRecovered(true);
+            }
+            else if (msg instanceof BatchMessage) {
+                ((BatchMessage) msg).setRecovered(true);
+            }
+
+            // Send message back with highest priority
+            self().tell(msg, self());
+
+            // Wait to let the message go to the top of the queue
+            Thread.sleep(2000);
+        }
+
     }
 
     protected abstract void onMessage(Message message);

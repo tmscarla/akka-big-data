@@ -6,6 +6,7 @@ import java.io.Serializable;
 public class Message implements Serializable {
     private final String key;
     private final String val;
+    private boolean recovered = false;
 
     public Message(final String key, final String val) {
         super();
@@ -19,6 +20,14 @@ public class Message implements Serializable {
 
     public final String getVal() {
         return val;
+    }
+
+    public boolean isRecovered() {
+        return recovered;
+    }
+
+    public void setRecovered(boolean recovered) {
+        this.recovered = recovered;
     }
 
     @Override

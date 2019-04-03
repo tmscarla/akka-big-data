@@ -22,20 +22,13 @@ public class MapWorker extends Worker {
     }
 
     @Override
-    public void preRestart(Throwable reason, Optional<Object> message) throws Exception {
-        if(message.isPresent()) {
-            self().tell(message.get(), self());
-        }
-    }
-
-    @Override
     protected final void onMessage(Message message) {
         long startTime = System.nanoTime();
         singleRecMsg++;
         recMsg++;
 
-        // FIXME IMPLEMENT CRASH
-        if (recMsg % 100 == 0) {
+        if (recMsg % 10 == 0) {
+            System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
             throw new RuntimeException(color + self().path().name() + " Crashed!");
         } else {
             System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);

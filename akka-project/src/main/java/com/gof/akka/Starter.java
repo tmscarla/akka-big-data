@@ -27,7 +27,11 @@ public class Starter {
         List<String> collaboratorNodesURI = Arrays.asList("akka.tcp://sys@127.0.0.1:6120",
                                                           "akka.tcp://sys@127.0.0.1:6121");
 
-        starterNode(starterNodeURI, collaboratorNodesURI, Job.jobOne.getOperators());
+        try {
+            starterNode(starterNodeURI, collaboratorNodesURI, Job.jobOne.getOperators());
+        } catch (RuntimeException ignored) {
+
+        }
 
     }
 

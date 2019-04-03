@@ -21,24 +21,22 @@ import com.gof.akka.messages.stats.StatsMsg;
 import com.gof.akka.utils.ConsoleColors;
 
 public class Source  extends AbstractActor {
+
     private List<ActorRef> downstream = new ArrayList<>();
-    private String sourceFilePath;
 
     private final Random rand = new Random();
-    private boolean loadFromFile = false;
     private int sleepTime = 400;
+
+    private volatile boolean running = true;
     private volatile boolean suspended = false;
+
     private int total = 0;
     private int totalBatches = 0;
 
     private int batchSize = 3;
     private static boolean batchMode = false;
     private List <Message> batchQueue = new ArrayList<>();
-    private volatile boolean running = true;
 
-    public void stop() {
-        running = false;
-    }
 
     /* CONSTRUCTORS */
 
@@ -46,14 +44,13 @@ public class Source  extends AbstractActor {
         super();
     }
 
-    public Source(final List<ActorRef> downstream, String sourceFilePath, int batchSize, int sleepTime) {
+    public Source(final List<ActorRef> downstream, int batchSize, int sleepTime) {
         this.downstream = downstream;
-        this.sourceFilePath = sourceFilePath;
         this.batchSize = batchSize;
         this.sleepTime = sleepTime;
     }
 
-    /* BEHAVIOR */
+    /* BEHAVIOUR */
 
     @Override
     public Receive createReceive() {

@@ -8,6 +8,7 @@ import java.util.List;
 // BatchMessage, a message which contains a list of different Message objects
 public class BatchMessage implements Serializable {
     private List<Message> messages = new ArrayList<>();
+    private boolean recovered = false;
 
     public BatchMessage(List<Message> messages) {
         super();
@@ -16,6 +17,18 @@ public class BatchMessage implements Serializable {
 
     public final List<Message> getMessages() {
         return messages;
+    }
+
+    public void setMessages(List<Message> messages) {
+        this.messages = messages;
+    }
+
+    public boolean isRecovered() {
+        return recovered;
+    }
+
+    public void setRecovered(boolean recovered) {
+        this.recovered = recovered;
     }
 
     @Override
