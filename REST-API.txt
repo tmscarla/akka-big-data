@@ -6,11 +6,11 @@ curl -d '{"keySize":"10", "valueSize":"50"}' -H "Content-Type: application/json"
 
 
 # READ FROM CSV
-curl -d '{"filePath":"/Users/tommasoscarlatti/Desktop/PoliMi/akka-bigdata/akka-project/data/prova.csv"}' -H "Content-Type: application/json" -X POST http://localhost:8080/source/read
+curl -d '{"filePath":"/path/to/file.csv"}' -H "Content-Type: application/json" -X POST http://localhost:8080/source/read
 
 
 # JOB
-curl -d '{"id":"2"}' -H "Content-Type: application/json" -X POST http://localhost:8080/source/job
+curl -d '{"id":"2"}' -H "Content-Type: application/json" -X POST http://localhost:8080/job
 
 
 # MODE
