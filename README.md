@@ -57,7 +57,9 @@ On startup the system loads a default Job (a meaningful acyclic graph of operato
 
 In this way, for each Operator of the Job we have a corresponding worker on each machine. The actors hierarchy is roughly the following:
 
-
+<p align="center">
+ <img src="https://github.com/tmscarla/akka-big-data/blob/master/img/actors_hierarchy.png" width=90%>
+</p>
 
 ## Collaborators
 
