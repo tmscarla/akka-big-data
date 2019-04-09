@@ -40,7 +40,7 @@ public class Collaborator {
 
         // Otherwise load defaults
         else {
-            String configPath = "conf/collaborator1.conf";
+            String configPath = "conf/collaborator.conf";
             Config collabConfig = ConfigFactory.parseFile(new File(configPath));
             collaboratorNode(collabConfig);
         }

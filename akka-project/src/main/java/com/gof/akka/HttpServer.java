@@ -27,6 +27,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 
+/**
+ * This class will run firstly the Starter node locally on a specified port and then
+ * an HTTP server on port 8080 to handle GET and POST requests.
+ *
+ **/
+
 class HttpServer extends HttpApp {
     // Actor System on the starter node
     private static ActorSystem system;
