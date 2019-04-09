@@ -32,7 +32,31 @@ Akka is a toolkit for building highly concurrent, distributed, and resilient mes
 <img src="https://doc.akka.io/docs/akka/current/guide/diagrams/actor_graph.png"/>
 </p>
 
-## Structure
+## Project Structure
+Here are listed the main packages of the project:
+
+* **Nodes**: main actors of the system such as: Sink, Source and Master
+* **Operators**: operators signatures
+  * Map: takes in input a <Key, Value> pair and produces a <Key, Value> pair, according to a user-defined function.
+  * FlatMap: takes in input a <Key, Value> pair and produces a set of <Key, Value> pairs, according to a user-defined function.
+  * Filter: takes in input a <Key, Value> pair and either propagates it downstream or drops it, according to a user-defined predicate.
+  * Aggregate: accumulates n <Key, Value> pairs and produces a single <Key, Value> pair, according to a user-defined aggregate function.
+  * Split: forwards the incoming <Key, Value> pairs to multiple downstream operators.
+  * Merge: accepts <Key, Value> pairs from multiple operators and forwards them to the downstream operator.
+* **Workers**: Actor implementation of each operator
+* **Messages**: collection of all the messages exchanged between actors
+* **Functions**: interfaces for operators' user-defined functions
+
+# Workflow
+
+## Initialization
+On startup the system loads a default Job (a meaningful acyclic graph of operators) and allocates Actors on the different machines involved. From now on we will assume a system with one Starter node and two Collaborator nodes.
+
+* **Starter node**: hosts the main actors, Source, Sink, Master, Collector and a Worker for each Operator.
+* **Collaborator node**: hosts a Worker for each Operator.
+
+In this way, for each Operator of the Job we have a corresponding worker on each machine. The actors hierarchy is roughly the following:
+
 
 
 ## Collaborators
