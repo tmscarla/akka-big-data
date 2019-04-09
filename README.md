@@ -55,13 +55,31 @@ On startup the system loads a default Job (a meaningful acyclic graph of operato
 * **Starter node**: hosts the main actors, Source, Sink, Master, Collector and a Worker for each Operator.
 * **Collaborator node**: hosts a Worker for each Operator.
 
-In this way, for each Operator of the Job we have a corresponding worker on each machine. The actors hierarchy is roughly the following:
+In this way, for each Operator of the Job we have a corresponding worker on each machine. The actors hierarchy of a sample Job with three Workers (Map, Filter, Aggregate) is the following:
 
 <p align="center">
  <img src="https://github.com/tmscarla/akka-big-data/blob/master/img/actors_hierarchy.png" width=90%>
 </p>
 
-## Collaborators
+Black nodes are allocated on the Starter machine, while colored Workers are allocated on Collaborators.
+The **Master** node is in charge of allocating all the Workers within its context, in this way it's able to:
+* Choose for local or remote deployment
+* Set dinamically the downstream of each Worker
+* Handle failures
+
+## Computation: from Source to Sink
+The Source node continuosly sends messages of <Key, Value> pairs to its downstream, which is the first stage of Workers of the first Operator. It can operate in two different ways:
+* *Random*: crafts randomly generated messages within a specified keySize and valueSize range.
+* *Read*: reads rows from a csv file with two columns ['Key', 'Value']
+
+## Stream vs Batch mode
+
+## Fault tolerance
+
+# REST API
+
+
+## Other Collaborators
 
 - [Matteo Moreschini](https://github.com/teomores)
 - [Alessio Russo Introito](https://github.com/russointroitoa)
