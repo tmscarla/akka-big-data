@@ -77,6 +77,14 @@ The Source node continuosly sends messages of <Key, Value> pairs to its downstre
 ## Fault tolerance
 
 # REST API
+A complete set of examples of the REST API can be found [here](https://github.com/tmscarla/akka-big-data/blob/master/REST-API.txt). Below a detailed explanation of each endpoint:
+
+* **Random source**: make the source generate continuosly random messages with a key and a value included in a *keySize* and a *valueSize* range respectively.
+* **Read from CSV**: generate messages reading from a CSV file with two columns: ['Key', 'Value'].
+* **Set Job**: clear all the operators instantiated if a previous job was running and then select a new job from the available ones using an id parameter.
+* **Batch/Stream**: switch between batch and streaming mode.
+* **Suspend/Resume**: suspend or resume source, i.e. stops or starts sending messages.
+* **Statistiscs**: print a summary of the statistics of the system.
 
 
 ## Other Collaborators
