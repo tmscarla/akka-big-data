@@ -72,7 +72,14 @@ The Source node continuosly sends messages of <Key, Value> pairs to its downstre
 * *Random*: crafts randomly generated messages within a specified keySize and valueSize range.
 * *Read*: reads rows from a csv file with two columns ['Key', 'Value']
 
+Operators are organized in stages. Normally, each Operator is assigned to a different stage (and its Workers consequently). If there is a Split operator, all the Operators between Split and Merge live in the same stage, i.e. they are in "parallel".
+A Split operator duplicates each message for each Operator in its downstram.
+
+
+When a message reaches the Sink, it is written permanently on a CSV file under the /data folder.
+
 ## Stream vs Batch mode
+The engine can work into different ways
 
 ## Fault tolerance
 
