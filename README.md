@@ -73,10 +73,17 @@ The Source node continuosly sends messages of <Key, Value> pairs to its downstre
 * *Read*: reads rows from a csv file with two columns ['Key', 'Value']
 
 Operators are organized in stages. Normally, each Operator is assigned to a different stage (and its Workers consequently). If there is a Split operator, all the Operators between Split and Merge live in the same stage, i.e. they are in "parallel".
-A Split operator duplicates each message for each Operator in its downstram.
-
+A Split operator duplicates each message for each Operator in its downstream. Each Worker chooses the proper Worker in its downstream using the hashcode of the key. 
 
 When a message reaches the Sink, it is written permanently on a CSV file under the /data folder.
+
+<p align="center">
+ <img src="https://github.com/tmscarla/akka-big-data/blob/master/img/workflow.png" width=90%>
+</p>
+
+The figure above shows an example of a Job with the following operators in order: Map, Split, Filter, FlatMap, Merge.
+
+The system is made of three different machines: the black one is the Starter node, the red and the blue are Collaborator nodes. For each Operator, a Worker is instantiated on each machine. Vertically aligned workers are on the same stage of the computation. 
 
 ## Stream vs Batch mode
 The engine can work into different ways
