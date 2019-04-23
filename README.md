@@ -85,12 +85,15 @@ The figure above shows an example of a Job with the following operators in order
 
 The system is made of three different machines: the black one is the Starter node, the red and the blue are Collaborator nodes. For each Operator, a Worker is instantiated on each machine. Vertically aligned workers are on the same stage of the computation. 
 
-## Stream vs Batch mode
-The engine can work into different ways
+## Streaming vs Batch mode
+The engine can work into different modes:
+
+* **Streaming**: single messages of <Key, Value> pairs are exchanged between workers. When a Worker receives a message, it processes it according to its specific Operator and then forwards it to its downstream. In this case, the computation is continuos. Each element gets processed as soon as it is available. This can lead to a lower delay but also to a lower throughput.
+* **Batch**: the stream is divided into batches of data. Each operator processes a batch at a time and waits until enough data elements are available to fill a batch. Each operator has a *batchSize* attribute that quantifies the size of the buffer. It might introduce some delay.
 
 ## Fault tolerance
 
-# REST API
+## REST API
 A complete set of examples of the REST API can be found [here](https://github.com/tmscarla/akka-big-data/blob/master/REST-API.txt). Below a detailed explanation of each endpoint:
 
 * **Random source**: make the source generate continuosly random messages with a key and a value included in a *keySize* and a *valueSize* range respectively.
