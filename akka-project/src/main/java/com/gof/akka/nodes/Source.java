@@ -122,7 +122,6 @@ public class Source  extends AbstractActor {
 
     // Start sending messages read from a source csv file
     private void onReadMsg(ReadSourceMsg message) {
-        String a = "/Users/tommasoscarlatti/Desktop/PoliMi/akka-bigdata/akka-project/data/cuba_news.csv";
         running = true;
         suspended = false;
         new Thread(() -> {
