@@ -92,6 +92,16 @@ The engine can work into different modes:
 * **Batch**: the stream is divided into batches of data. Each operator processes a batch at a time and waits until enough data elements are available to fill a batch. Each operator has a *batchSize* attribute that quantifies the size of the buffer. It might introduce some delay.
 
 ## Fault tolerance
+Akka by defaul, has the following general rules for message sends:
+* at-most-once delivery
+* message ordering per sender-reciver pair
+Further details can be found on [this page](https://doc.akka.io/docs/akka/current/general/message-delivery-reliability.html) of the official documentation.
+
+The platform guarantees an **exactly-once delivery**, meaning that a message sent between two workers can neither be lost nor duplicated. The delivery mechanism relies on the assumption that the message has been successfully sent, received, put in the mailbox, and then processed by the target actor.
+
+When a Worker crashes during a message processing it throws an Exception which is handled by the Master node. The Master restarts the Worker which puts the message which caused the crash in its mailbox again. In this way the message will be re-processed by the Worker. 
+
+In order to guarantee that the processing order is unchanged, each Worker's mailbox is structured as a priority queue. When a message is put back in the mailbox it has the highest priority in the queue. In this way we are guaranteed that it will be processed first.
 
 ## REST API
 A complete set of examples of the REST API can be found [here](https://github.com/tmscarla/akka-big-data/blob/master/REST-API.txt). Below a detailed explanation of each endpoint:
