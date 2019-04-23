@@ -55,13 +55,46 @@ On startup the system loads a default Job (a meaningful acyclic graph of operato
 * **Starter node**: hosts the main actors, Source, Sink, Master, Collector and a Worker for each Operator.
 * **Collaborator node**: hosts a Worker for each Operator.
 
-In this way, for each Operator of the Job we have a corresponding worker on each machine. The actors hierarchy is roughly the following:
+In this way, for each Operator of the Job we have a corresponding worker on each machine. The actors hierarchy of a sample Job with three Workers (Map, Filter, Aggregate) is the following:
 
 <p align="center">
  <img src="https://github.com/tmscarla/akka-big-data/blob/master/img/actors_hierarchy.png" width=90%>
 </p>
 
-## Collaborators
+Black nodes are allocated on the Starter machine, while colored Workers are allocated on Collaborators.
+The **Master** node is in charge of allocating all the Workers within its context, in this way it's able to:
+* Choose for local or remote deployment
+* Set dinamically the downstream of each Worker
+* Handle failures
+
+## Computation: from Source to Sink
+The Source node continuosly sends messages of <Key, Value> pairs to its downstream, which is the first stage of Workers of the first Operator. It can operate in two different ways:
+* *Random*: crafts randomly generated messages within a specified keySize and valueSize range.
+* *Read*: reads rows from a csv file with two columns ['Key', 'Value']
+
+Operators are organized in stages. Normally, each Operator is assigned to a different stage (and its Workers consequently). If there is a Split operator, all the Operators between Split and Merge live in the same stage, i.e. they are in "parallel".
+A Split operator duplicates each message for each Operator in its downstram.
+
+
+When a message reaches the Sink, it is written permanently on a CSV file under the /data folder.
+
+## Stream vs Batch mode
+The engine can work into different ways
+
+## Fault tolerance
+
+# REST API
+A complete set of examples of the REST API can be found [here](https://github.com/tmscarla/akka-big-data/blob/master/REST-API.txt). Below a detailed explanation of each endpoint:
+
+* **Random source**: make the source generate continuosly random messages with a key and a value included in a *keySize* and a *valueSize* range respectively.
+* **Read from CSV**: generate messages reading from a CSV file with two columns: ['Key', 'Value'].
+* **Set Job**: clear all the operators instantiated if a previous job was running and then select a new job from the available ones using an id parameter.
+* **Batch/Stream**: switch between batch and streaming mode.
+* **Suspend/Resume**: suspend or resume source, i.e. stops or starts sending messages.
+* **Statistiscs**: print a summary of the statistics of the system.
+
+
+## Other Collaborators
 
 - [Matteo Moreschini](https://github.com/teomores)
 - [Alessio Russo Introito](https://github.com/russointroitoa)
