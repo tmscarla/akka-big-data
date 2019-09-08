@@ -24,7 +24,7 @@ public class FilterWorker extends Worker {
         System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
 
         // Simulate crash
-        simulateCrash(100);
+        simulateCrash(50);
 
         // Evaluate filter predicate
         final Boolean predicateResult = fun.predicate(message.getKey(), message.getVal());

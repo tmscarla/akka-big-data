@@ -29,7 +29,7 @@ public class MapWorker extends Worker {
         System.out.println(color + self().path().name() + "(" + stagePos + ") received: " + message);
 
         // Simulate crash
-        simulateCrash(100);
+        simulateCrash(50);
 
         // Perform Map on received message
         final Message result = fun.process(message.getKey(), message.getVal());
