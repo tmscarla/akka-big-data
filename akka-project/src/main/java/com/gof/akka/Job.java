@@ -37,7 +37,7 @@ public class Job implements Serializable {
     public static final Job jobOne = new Job(Arrays.asList(
             new MapOperator("Map", 10,
                     (MapFunction & Serializable) (String k, String v) ->
-                            new Message(k+Integer.toString(new Random().nextInt(100)), v+"pippo")),
+                            new Message(k+Integer.toString(new Random().nextInt(100)), v+"middle")),
             new SplitOperator("Split", 10),
             new MapOperator("MapParallel", 10,
                     (MapFunction & Serializable) (String k, String v) ->
@@ -101,7 +101,7 @@ public class Job implements Serializable {
             new MergeOperator("Merge", 5),
             new MapOperator("Map", 5,
                     (MapFunction & Serializable) (String k, String v) ->
-                            new Message(k, v+".job3"))), "jobTwo");
+                            new Message(k, v+".job3"))), "jobThree");
 
 }
 
